@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>體操技能地圖</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@600;700&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@500&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#F1F2EC;
+    --surface:#FFFFFF;
+    --surface-2:#F5F6F1;
+    --border:#DCDFD5;
+    --ink:#1D2421;
+    --ink-2:#5C6A62;
+    --ink-3:#8F998F;
+    --mat:#1C4E80;
+    --mat-dark:#123249;
+    --radius:9px;
+
+    --t-base:#5B6B72; --t-pos:#3E6E8E; --t-roll:#2F7A5C; --t-hsp:#1F6B4F;
+    --t-conn:#B9832A; --t-slt:#C1652E; --t-shp:#A8532A; --t-tws:#6E4A9E; --t-dbl:#B23A48;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:'Inter',-apple-system,'Noto Sans TC',sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .mono{font-family:'IBM Plex Mono',monospace;}
+  .cond{font-family:'Barlow Condensed','Inter',sans-serif; font-weight:700;}
+
+  header{
+    padding:20px 22px 0; background:var(--bg);
+    position:sticky; top:0; z-index:20;
+    border-bottom:1px solid transparent;
+  }
+  .h-row{display:flex; align-items:center; gap:12px; margin-bottom:4px;}
+  .mark{
+    flex:none; width:30px; height:30px; border-radius:7px;
+    background:linear-gradient(135deg, var(--mat) 52%, var(--t-slt) 52%);
+  }
+  h1{font-size:26px; line-height:1; margin:0; letter-spacing:0.2px; color:var(--mat-dark); flex:1;}
+  .help-btn{
+    flex:none; width:30px; height:30px; border-radius:50%; border:1px solid var(--border);
+    background:var(--surface); color:var(--ink-2); font-size:15px; font-weight:600; cursor:pointer;
+    font-family:'Barlow Condensed',sans-serif;
+  }
+  .help-btn:hover{border-color:var(--mat); color:var(--mat-dark);}
+  .mode-toggle{display:flex; gap:4px; background:var(--surface-2); border-radius:999px; padding:3px; flex:none;}
+  .mode-btn{
+    padding:6px 14px; border-radius:999px; border:none; background:none; cursor:pointer;
+    font-size:12.5px; font-weight:600; color:var(--ink-2); font-family:'Barlow Condensed',sans-serif;
+  }
+  .mode-btn.active{background:var(--mat-dark); color:#fff;}
+  .h-sub{color:var(--ink-2); font-size:13.5px; margin:6px 0 14px 42px;}
+
+  .controls{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-bottom:12px;}
+  #search{
+    flex:1; min-width:180px; max-width:320px;
+    padding:9px 13px; border:1px solid var(--border); border-radius:var(--radius);
+    background:var(--surface); font-size:14px; font-family:inherit; color:var(--ink);
+  }
+  #search::placeholder{color:var(--ink-3);}
+  #search:focus{outline:2px solid var(--mat); outline-offset:1px;}
+  .level-chip{
+    padding:6px 13px; border-radius:999px; border:1px solid var(--border);
+    background:var(--surface); font-size:12.5px; font-weight:500; cursor:pointer; color:var(--ink-2);
+    user-select:none; transition:background .1s, color .1s, border-color .1s;
+  }
+  .level-chip.active{background:var(--mat-dark); border-color:var(--mat-dark); color:#fff;}
+  .level-chip:focus-visible{outline:2px solid var(--mat); outline-offset:1px;}
+
+  .tabs{display:flex; gap:2px; overflow-x:auto; padding-bottom:2px;}
+  .tab{
+    padding:9px 18px; font-size:15.5px; font-weight:600; font-family:'Barlow Condensed',sans-serif;
+    letter-spacing:0.2px; color:var(--ink-2);
+    background:none; border:none; border-bottom:3px solid transparent; cursor:pointer;
+    white-space:nowrap; transition:color .1s, border-color .1s;
+  }
+  .tab.active{color:var(--mat-dark); border-bottom-color:var(--mat);}
+  .tab:hover:not(.active){color:var(--ink);}
+  .tab:focus-visible{outline:2px solid var(--mat); outline-offset:-2px;}
+  header::after{
+    content:''; display:block; height:1px; background:var(--border); margin-top:0;
+  }
+
+  main{padding:16px 22px 40px;}
+  #board{display:flex; gap:16px; overflow-x:auto; padding-bottom:10px; align-items:flex-start;}
+  .col{flex:0 0 216px; width:216px;}
+  .col-head{
+    padding:6px 10px; border-radius:6px; font-size:14.5px; font-weight:700;
+    font-family:'Barlow Condensed',sans-serif; letter-spacing:0.3px;
+    margin-bottom:9px; color:#fff;
+  }
+  .fam-label{font-size:11px; color:var(--ink-3); margin:11px 2px 5px; font-weight:600;}
+  .fam-label:first-child{margin-top:0;}
+
+  .card{
+    background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--border);
+    border-radius:6px; padding:9px 10px; margin-bottom:6px; cursor:pointer;
+    transition:opacity .12s, box-shadow .12s, border-color .12s;
+  }
+  .card:hover{box-shadow:0 3px 10px rgba(18,50,73,0.13);}
+  .card.dim{opacity:0.26;}
+  .card.selected{outline:2px solid var(--mat); outline-offset:1px;}
+  .card.prereq-hl{outline:2px solid var(--t-slt); outline-offset:1px;}
+  .card.unlock-hl{outline:2px solid var(--t-pos); outline-offset:1px;}
+  .card-name{font-size:13px; font-weight:600; line-height:1.35; margin-bottom:4px;}
+  .card-meta{display:flex; align-items:center; gap:7px;}
+  .card-id{font-size:10.5px; color:var(--ink-3);}
+  .risk-label{font-size:10.5px; font-weight:600;}
+  .risk-低{color:#3E8562;} .risk-中{color:#AD7E1E;} .risk-高{color:#B3453D;}
+
+  .empty-col{color:var(--ink-3); font-size:12px; padding:8px 2px;}
+
+  /* detail panel */
+  #overlay{
+    position:fixed; inset:0; background:rgba(18,24,20,0.34); z-index:40;
+    display:none;
+  }
+  #panel{
+    position:fixed; top:0; right:0; height:100%; width:380px; max-width:92vw;
+    background:var(--surface); z-index:41; box-shadow:-6px 0 28px rgba(15,25,20,0.16);
+    transform:translateX(100%); transition:transform .18s ease-out;
+    overflow-y:auto; padding:0 20px 40px;
+  }
+  #panel.open{transform:translateX(0);}
+  #overlay.show{display:block;}
+  .panel-top{margin:0 -20px 18px; padding:20px 20px 16px; color:#fff;}
+  .panel-close{
+    position:absolute; top:14px; right:14px; background:rgba(255,255,255,0.18); border:none;
+    width:26px; height:26px; border-radius:50%; font-size:14px; color:#fff; cursor:pointer; line-height:1;
+  }
+  .p-tier-badge{
+    display:inline-block; font-size:11.5px; font-weight:600; margin-bottom:8px; opacity:0.92;
+  }
+  .p-name{font-family:'Barlow Condensed',sans-serif; font-size:23px; font-weight:700; margin:0 0 3px; padding-right:30px; line-height:1.15;}
+  .p-id{font-size:11.5px; opacity:0.85;}
+  .p-section{margin-bottom:16px;}
+  .p-label{font-size:11.5px; font-weight:600; color:var(--ink-2); margin-bottom:5px;}
+  .p-value{font-size:13.5px; line-height:1.6; color:var(--ink);}
+  .p-cue{background:var(--surface-2); border-left:3px solid var(--mat); border-radius:0 6px 6px 0; padding:9px 11px; font-size:13.5px; line-height:1.7;}
+  .chip-row{display:flex; flex-wrap:wrap; gap:6px;}
+  .chip{
+    font-size:12px; padding:5px 10px; border-radius:6px; background:var(--surface-2);
+    border:1px solid var(--border); cursor:pointer; color:var(--ink);
+  }
+  .chip:hover{border-color:var(--mat); color:var(--mat-dark);}
+  .p-empty{color:var(--ink-3); font-size:13px;}
+  .p-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px 10px;}
+
+  @media (max-width:640px){
+    header{padding:14px 14px 0;}
+    h1{font-size:22px;}
+    .mark{width:26px; height:26px;}
+    .h-sub{margin-left:36px; font-size:12.5px; margin-bottom:12px;}
+    .controls{margin-bottom:10px;}
+    #search{max-width:none; min-width:0; flex:1 1 100%;}
+    .level-chip{padding:7px 12px; font-size:12px;}
+    .tab{padding:10px 14px; font-size:15px;}
+    main{padding:12px 14px 24px;}
+    #board{gap:10px; scroll-snap-type:x proximity; -webkit-overflow-scrolling:touch;}
+    .col{flex:0 0 76vw; width:76vw; scroll-snap-align:start;}
+    .card{padding:11px 12px;}
+    .card-name{font-size:13.5px;}
+    #panel{
+      top:auto; bottom:0; left:0; right:0; width:100%; max-width:100%;
+      height:88vh; border-radius:16px 16px 0 0;
+      transform:translateY(100%); box-shadow:0 -8px 28px rgba(15,25,20,0.2);
+    }
+    #panel.open{transform:translateY(0);}
+    .panel-close{width:30px; height:30px; font-size:15px;}
+    .p-name{font-size:21px;}
+    #panel::before{
+      content:''; position:absolute; top:9px; left:50%; transform:translateX(-50%);
+      width:38px; height:4px; border-radius:2px; background:rgba(0,0,0,0.16); z-index:2;
+    }
+    #helpModal{width:94vw; max-height:86vh;}
+  }
+
+  /* help modal */
+  #helpOverlay{
+    position:fixed; inset:0; background:rgba(18,24,20,0.4); z-index:50;
+    display:none; align-items:center; justify-content:center; padding:20px;
+  }
+  #helpOverlay.show{display:flex;}
+  #helpModal{
+    background:var(--surface); border-radius:14px; width:520px; max-width:100%;
+    max-height:82vh; overflow-y:auto; padding:24px 24px 22px; position:relative;
+    box-shadow:0 16px 44px rgba(15,25,20,0.24);
+  }
+  .help-close{
+    position:absolute; top:14px; right:14px; background:var(--surface-2); border:none;
+    width:28px; height:28px; border-radius:50%; font-size:14px; color:var(--ink-2); cursor:pointer;
+  }
+  .help-title{font-family:'Barlow Condensed',sans-serif; font-size:22px; font-weight:700; margin:0 0 4px; color:var(--mat-dark);}
+  .help-lead{font-size:13px; color:var(--ink-2); margin:0 0 18px;}
+  .help-section{margin-bottom:20px;}
+  .help-h{font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:9px;}
+  .demo-card-row{display:flex; gap:16px; align-items:flex-start;}
+  .demo-card{
+    background:var(--surface); border:1px solid var(--border); border-left:3px solid var(--t-slt);
+    border-radius:6px; padding:9px 10px; width:150px; flex:none;
+  }
+  .demo-card .card-name{font-size:13px; font-weight:600; margin-bottom:4px;}
+  .demo-card .card-meta{display:flex; gap:7px; align-items:center;}
+  .demo-legend{list-style:none; margin:0; padding:0; font-size:12.5px; color:var(--ink); flex:1;}
+  .demo-legend li{margin-bottom:8px; display:flex; gap:8px;}
+  .demo-legend b{color:var(--mat-dark); font-weight:600;}
+  .tier-legend{display:flex; flex-wrap:wrap; gap:6px 10px;}
+  .tier-swatch{display:flex; align-items:center; gap:5px; font-size:12px; color:var(--ink-2);}
+  .tier-swatch i{width:11px; height:11px; border-radius:3px; display:inline-block;}
+  .ring-legend{display:flex; flex-direction:column; gap:8px;}
+  .ring-item{display:flex; align-items:center; gap:9px; font-size:12.5px;}
+  .ring-chip{width:26px; height:20px; border-radius:5px; background:var(--surface-2); flex:none;}
+  .tips-list{margin:0; padding-left:18px; font-size:12.5px; line-height:1.9; color:var(--ink);}
+
+  /* planner */
+  #plannerView{max-width:720px; margin:0 auto;}
+  .plan-card{background:var(--surface); border:1px solid var(--border); border-radius:12px; padding:18px 20px; margin-bottom:16px;}
+  .plan-label{font-size:12px; font-weight:700; color:var(--ink-2); margin-bottom:8px;}
+  .plan-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .plan-row select, .plan-row input[type=text]{
+    padding:8px 11px; border:1px solid var(--border); border-radius:var(--radius);
+    font-size:13.5px; font-family:inherit; background:var(--surface); color:var(--ink);
+  }
+  .plan-btn{
+    padding:8px 14px; border-radius:var(--radius); border:1px solid var(--mat-dark);
+    background:var(--mat-dark); color:#fff; font-size:13px; font-weight:600; cursor:pointer;
+  }
+  .plan-btn.ghost{background:none; color:var(--mat-dark);}
+  .plan-btn.danger{background:none; border-color:var(--t-dbl); color:var(--t-dbl);}
+  .goal-search-wrap{position:relative; flex:1; min-width:200px;}
+  .goal-search-wrap input{width:100%;}
+  .suggest-list{
+    position:absolute; top:100%; left:0; right:0; background:var(--surface); border:1px solid var(--border);
+    border-radius:8px; margin-top:4px; max-height:220px; overflow-y:auto; z-index:5; box-shadow:0 6px 20px rgba(15,25,20,0.12);
+  }
+  .suggest-item{padding:8px 12px; font-size:13px; cursor:pointer; display:flex; justify-content:space-between; gap:8px;}
+  .suggest-item:hover{background:var(--surface-2);}
+  .suggest-item span{color:var(--ink-3); font-size:11px;}
+  .goal-chosen{
+    display:flex; align-items:center; gap:10px; padding:10px 12px; background:var(--surface-2);
+    border-radius:8px; margin-top:10px;
+  }
+  .goal-chosen .dot{width:10px; height:10px; border-radius:3px; flex:none;}
+  .plan-empty{color:var(--ink-3); font-size:13.5px; text-align:center; padding:30px 10px;}
+  .ancestor-list{max-height:340px; overflow-y:auto; border:1px solid var(--border); border-radius:8px;}
+  .anc-group-label{font-size:11px; font-weight:700; color:var(--ink-2); padding:8px 12px 4px;}
+  .anc-item{display:flex; align-items:center; gap:9px; padding:6px 12px; font-size:13px;}
+  .anc-item input{width:16px; height:16px; flex:none;}
+  .anc-item .id{color:var(--ink-3); font-size:10.5px; margin-left:auto;}
+  .plan-path-item{
+    display:flex; align-items:center; gap:10px; padding:9px 12px; border-left:3px solid var(--border);
+    background:var(--surface-2); border-radius:0 8px 8px 0; margin-bottom:6px; cursor:pointer;
+  }
+  .plan-path-item:hover{background:var(--surface); box-shadow:0 2px 8px rgba(18,50,73,0.1);}
+  .plan-path-num{font-family:'Barlow Condensed',sans-serif; font-weight:700; font-size:15px; color:var(--ink-3); width:22px; flex:none;}
+  .plan-path-name{font-size:13.5px; font-weight:600; flex:1;}
+  .plan-path-meta{font-size:11px; color:var(--ink-3); text-align:right; flex:none;}
+  .plan-warning{
+    background:#FBF2E1; border-left:3px solid var(--t-conn); border-radius:0 8px 8px 0;
+    padding:10px 12px; font-size:12.5px; color:var(--ink); margin-bottom:14px;
+  }
+  .plan-total{font-size:13px; color:var(--ink-2); margin-top:10px; text-align:right;}
+
+  .session-drop{border:1px solid var(--border); border-radius:8px; margin-bottom:6px; overflow:hidden;}
+  .session-drop summary{
+    padding:9px 12px; font-size:12.5px; cursor:pointer; background:var(--surface);
+    list-style:none; color:var(--ink); display:flex; align-items:center; gap:6px;
+  }
+  .session-drop summary::-webkit-details-marker{display:none;}
+  .session-drop summary::before{content:'▸'; color:var(--ink-3); font-size:11px; transition:transform .12s;}
+  .session-drop[open] summary::before{transform:rotate(90deg);}
+  .session-drop[open] summary{border-bottom:1px solid var(--border);}
+  .session-drop-body{padding:10px 12px 12px; background:var(--surface-2);}
+  .session-sub{font-size:11px; color:var(--ink-3); font-weight:600; margin:8px 0 4px;}
+  .session-sub:first-child{margin-top:0;}
+</style>
+</head>
+<body>
+
+<header>
+  <div class="h-row">
+    <div class="mark"></div>
+    <h1 class="cond">體操技能地圖</h1>
+    <button class="help-btn" id="helpBtn" aria-label="使用說明">?</button>
+  </div>
+  <div class="h-sub">搜尋動作，看清楚它的先備動作與解鎖路徑</div>
+  <div class="controls">
+    <div class="mode-toggle">
+      <button class="mode-btn active" id="modeMapBtn">瀏覽地圖</button>
+      <button class="mode-btn" id="modePlanBtn">規劃課表</button>
+    </div>
+  </div>
+  <div class="controls" id="mapControls">
+    <input id="search" type="text" placeholder="搜尋動作名稱或節點編號…" autocomplete="off">
+    <div id="levelChips"></div>
+  </div>
+  <div class="tabs" id="tabs"></div>
+</header>
+
+<main>
+  <div id="board"></div>
+  <div id="plannerView" style="display:none;"></div>
+</main>
+
+<div id="overlay"></div>
+<div id="panel">
+  <button class="panel-close" aria-label="關閉">✕</button>
+  <div id="panelBody"></div>
+</div>
+
+<div id="helpOverlay">
+  <div id="helpModal">
+    <button class="help-close" id="helpClose" aria-label="關閉說明">✕</button>
+    <h2 class="help-title">怎麼看這張地圖</h2>
+    <p class="help-lead">每個項目分頁，依難度分級排成一欄一欄，同一欄再依動作家族分組。</p>
+
+    <div class="help-section">
+      <div class="help-h">一張卡片上看得到什麼</div>
+      <div class="demo-card-row">
+        <div class="demo-card">
+          <div class="card-name">前空翻團身(獨立)</div>
+          <div class="card-meta">
+            <span class="risk-label risk-高" style="color:var(--t-slt)">風險高</span>
+            <span class="card-id mono" style="color:var(--ink-3)">FX-SLT-002</span>
+          </div>
+        </div>
+        <ul class="demo-legend">
+          <li><b>左側色條</b> — 對應所屬難度分級的顏色</li>
+          <li><b>風險X</b> — 練習這個動作的危險程度</li>
+          <li><b>灰色代號</b> — 節點編號，方便回 Excel 對照</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">難度分級顏色</div>
+      <div class="tier-legend" id="tierLegend"></div>
+    </div>
+
+    <div class="help-section">
+      <div class="help-h">點一張卡片之後，框線代表什麼</div>
+      <div class="ring-legend">
+        <div class="ring-item"><span class="ring-chip" style="outline:2px solid var(--mat); outline-offset:1px;"></span>目前選中的動作</div>
+        <div class="ring-item"><span class="ring-chip" style="outline:2px solid var(--t-slt); outline-offset:1px;"></span>它的先備動作（要先學會的）</div>
+        <div class="ring-item"><span class="ring-chip" style="outline:2px solid var(--t-pos); outline-offset:1px;"></span>它解鎖的下一步動作</div>
+      </div>
+    </div>
+
+    <div class="help-section" style="margin-bottom:0;">
+      <div class="help-h">操作技巧</div>
+      <ul class="tips-list">
+        <li>搜尋動作名稱或節點編號，會自動跳到對應分頁並定位</li>
+        <li>右側詳情面板裡的先備／解鎖動作是按鈕，點下去會直接跳過去，即使在別的項目也會自動切分頁</li>
+        <li>把「選手」篩選標籤點掉，可以只看目前學生群範圍，先不看選手級動作</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<script type="application/json" id="skillmap-data">
+{"disciplines": ["基礎體能訓練", "地板", "小彈翻床", "跳板(馬)", "大彈翻床"], "nodes": {"GEN-CORE-001": {"node_id": "GEN-CORE-001", "name": "核心穩定基礎(棒式/抗伸展)", "tier": "基礎", "family": "核心", "prerequisites": [], "regression": null, "required_qualities": "核心維持30秒以上不塌腰", "common_faults": "塌腰、憋氣", "teaching_cues": "「肚子夾緊」「肋骨往下收」", "risk_level": "低", "mastery_criteria": "平板支撐60秒不變形", "student_level": "入門", "est_sessions": "4-8", "discipline": "基礎體能訓練", "unlocks": ["VT-BAS-003", "VT-BAS-005", "TR-BAS-001"]}, "GEN-CORE-002": {"node_id": "GEN-CORE-002", "name": "核心發力基礎(捲腹)", "tier": "基礎", "family": "核心", "prerequisites": [], "regression": null, "required_qualities": "仰臥捲腹連續15下不代償(下背不過度離地)", "common_faults": "用甩動代替捲腹、下背過度離地", "teaching_cues": "「肚臍找膝蓋」「慢慢捲上來」", "risk_level": "低", "mastery_criteria": "連續15下動作標準無代償", "student_level": "入門", "est_sessions": "4-8", "discipline": "基礎體能訓練", "unlocks": []}, "GEN-CORE-003": {"node_id": "GEN-CORE-003", "name": "拱橋支撐柔軟度基礎(Bridge)", "tier": "基礎", "family": "柔軟度", "prerequisites": [], "regression": "貼牆橋", "required_qualities": "肩伸展、脊椎伸展活動度", "common_faults": "手腳距離過近、頭沒放鬆", "teaching_cues": "「手腳往中間走近」「頭放鬆看地板」", "risk_level": "低", "mastery_criteria": "獨立撐橋10秒且手腳距離合理", "student_level": "入門", "est_sessions": "8-15", "discipline": "基礎體能訓練", "unlocks": []}, "GEN-FLEX-001": {"node_id": "GEN-FLEX-001", "name": "肩關節活動度(推手基礎)", "tier": "基礎", "family": "柔軟度", "prerequisites": [], "regression": "牆面推肩伸展", "required_qualities": "肩屈曲角度接近180度", "common_faults": "聳肩代償、肋骨外翻", "teaching_cues": "「耳朵夾手臂」「不要聳肩」", "risk_level": "低", "mastery_criteria": "貼牆手倒立姿勢肩角度合格", "student_level": "入門", "est_sessions": "6-12", "discipline": "基礎體能訓練", "unlocks": ["GEN-STR-001"]}, "GEN-FLEX-002": {"node_id": "GEN-FLEX-002", "name": "髖關節柔軟度(分腿基礎)", "tier": "基礎", "family": "柔軟度", "prerequisites": [], "regression": "輔助壓腿", "required_qualities": "前後分腿達地面80%以上", "common_faults": "骨盆代償轉動", "teaching_cues": "「骨盆朝正前方」", "risk_level": "低", "mastery_criteria": "獨立分腿貼地10秒", "student_level": "入門", "est_sessions": "10-20", "discipline": "基礎體能訓練", "unlocks": ["GEN-AIR-003", "GEN-AIR-004", "FX-ROL-005", "FX-ROL-006", "FX-HSP-001", "VT-BAS-004", "TR-BAS-003", "TR-BAS-004", "TR-HSP-001"]}, "GEN-STR-001": {"node_id": "GEN-STR-001", "name": "手倒立支撐力量(靠牆倒立)", "tier": "基礎", "family": "力量", "prerequisites": ["GEN-FLEX-001"], "regression": "牆邊行走支撐", "required_qualities": "靠牆倒立維持30秒", "common_faults": "塌腰、屈肘", "teaching_cues": "「手指抓地」「身體像一根柱子」", "risk_level": "低", "mastery_criteria": "靠牆倒立穩定30秒", "student_level": "入門", "est_sessions": "8-15", "discipline": "基礎體能訓練", "unlocks": ["FX-ROL-003", "FX-ROL-004", "FX-ROL-008", "FX-ROL-009", "FX-HSP-001", "FX-HSP-004", "FX-HSP-005", "VT-BAS-006", "VT-HSP-001"]}, "GEN-STR-002": {"node_id": "GEN-STR-002", "name": "下肢爆發力(蹲跳/立定跳遠)", "tier": "基礎", "family": "力量", "prerequisites": [], "regression": "半蹲跳", "required_qualities": "立定跳遠達自身身高80%", "common_faults": "膝內夾、落地過硬", "teaching_cues": "「用力蹬地」「軟膝落地」", "risk_level": "低", "mastery_criteria": "連續5次穩定起跳落地", "student_level": "入門", "est_sessions": "6-10", "discipline": "基礎體能訓練", "unlocks": ["GEN-AIR-001", "GEN-LAND-001", "FX-ROL-007", "MT-BAS-001", "VT-BAS-001"]}, "GEN-AIR-001": {"node_id": "GEN-AIR-001", "name": "垂直跳", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-STR-002"], "regression": "原地小跳熱身", "required_qualities": "起跳時身體伸直、落地穩定", "common_faults": "起跳時拱腰或聳肩、落地重心不穩", "teaching_cues": "「用力往上跳」「身體像箭一樣直」", "risk_level": "低", "mastery_criteria": "連續5次垂直跳身體維持直線且落地穩定", "student_level": "入門", "est_sessions": "3-5", "discipline": "基礎體能訓練", "unlocks": ["GEN-AIR-002", "GEN-AIR-003", "GEN-AIR-004", "GEN-AIR-005", "TR-HSP-004", "TR-SLT-001", "TR-SLT-006"]}, "GEN-AIR-002": {"node_id": "GEN-AIR-002", "name": "團身跳", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-AIR-001"], "regression": null, "required_qualities": "核心收折速度", "common_faults": "抬膝不對稱、落地重心前後偏移", "teaching_cues": "「膝蓋抬到胸口」「手扶膝蓋」", "risk_level": "低", "mastery_criteria": "連續5次抱膝角度足夠且落地穩定", "student_level": "入門", "est_sessions": "3-5", "discipline": "基礎體能訓練", "unlocks": ["FX-SLT-001", "FX-SLT-003", "MT-BAS-002"]}, "GEN-AIR-003": {"node_id": "GEN-AIR-003", "name": "分腿跳", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-AIR-001", "GEN-FLEX-002"], "regression": null, "required_qualities": "髖關節柔軟度", "common_faults": "分腿角度不足、手未摸到腳尖", "teaching_cues": "「手摸腳尖」「腳打開像剪刀」", "risk_level": "低", "mastery_criteria": "連續5次分腿角度達標且落地穩定", "student_level": "入門", "est_sessions": "3-6", "discipline": "基礎體能訓練", "unlocks": ["MT-BAS-003"]}, "GEN-AIR-004": {"node_id": "GEN-AIR-004", "name": "屈體跳", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-AIR-001", "GEN-FLEX-002"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "膝蓋彎曲、屈體角度不足", "teaching_cues": "「手摸腳尖，膝蓋打直」", "risk_level": "低", "mastery_criteria": "連續5次屈體角度達標且落地穩定", "student_level": "入門", "est_sessions": "4-6", "discipline": "基礎體能訓練", "unlocks": ["MT-BAS-004"]}, "GEN-AIR-005": {"node_id": "GEN-AIR-005", "name": "跳轉180度", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-AIR-001"], "regression": null, "required_qualities": "起跳中軸向轉體控制", "common_faults": "轉體時身體歪斜、落地方向不準", "teaching_cues": "「眼睛帶頭轉」「原地轉半圈」", "risk_level": "低", "mastery_criteria": "連續5次穩定完成落地方向準確", "student_level": "入門", "est_sessions": "4-6", "discipline": "基礎體能訓練", "unlocks": ["GEN-AIR-006", "MT-BAS-005"]}, "GEN-AIR-006": {"node_id": "GEN-AIR-006", "name": "跳轉360度", "tier": "基礎", "family": "空感", "prerequisites": ["GEN-AIR-005"], "regression": "分段轉180度x2代替", "required_qualities": "全視野轉體空間定向感", "common_faults": "轉體中途睜眼找地、轉體不足180度就落地", "teaching_cues": "「眼睛跟轉、腳步跟上」", "risk_level": "低", "mastery_criteria": "連續3次完整轉滿360度且落地穩定", "student_level": "入門", "est_sessions": "6-10", "discipline": "基礎體能訓練", "unlocks": ["MT-BAS-006"]}, "GEN-LAND-001": {"node_id": "GEN-LAND-001", "name": "落地緩衝控制基礎", "tier": "基礎", "family": "落地控制", "prerequisites": ["GEN-STR-002"], "regression": "跳箱定點落地", "required_qualities": "落地膝踝緩衝、軀幹不前傾倒", "common_faults": "直膝落地、落地後跌坐", "teaching_cues": "「軟膝」「胸口抬起」", "risk_level": "低", "mastery_criteria": "連續5次落地穩定不需扶物", "student_level": "入門", "est_sessions": "6-10", "discipline": "基礎體能訓練", "unlocks": ["MT-BAS-001", "TR-BAS-001"]}, "FX-ROL-001": {"node_id": "FX-ROL-001", "name": "前滾翻", "tier": "滾翻", "family": "滾翻基礎", "prerequisites": [], "regression": "斜坡輔助前滾翻", "required_qualities": "頸部力量、團身控制", "common_faults": "頭頂地、歪斜", "teaching_cues": "「下巴收」「看肚子」", "risk_level": "低", "mastery_criteria": "連續3次直線滾動不歪斜", "student_level": "入門", "est_sessions": "3-6", "discipline": "地板", "unlocks": ["FX-ROL-002", "FX-ROL-003", "FX-ROL-005", "FX-ROL-007", "MT-BAS-007"]}, "FX-ROL-002": {"node_id": "FX-ROL-002", "name": "後滾翻", "tier": "滾翻", "family": "滾翻基礎", "prerequisites": ["FX-ROL-001"], "regression": "斜坡輔助後滾翻", "required_qualities": "肩推地力量", "common_faults": "卡在頸部翻不過去", "teaching_cues": "「手放耳朵旁」「用力推地板」", "risk_level": "低", "mastery_criteria": "獨立完成不需輔助", "student_level": "入門", "est_sessions": "5-10", "discipline": "地板", "unlocks": ["FX-ROL-004", "FX-ROL-006"]}, "FX-ROL-003": {"node_id": "FX-ROL-003", "name": "直膝前滾翻", "tier": "滾翻", "family": "滾翻中階", "prerequisites": ["FX-ROL-001", "GEN-STR-001"], "regression": "半直體前滾翻", "required_qualities": "核心力量、平衡、腿後側柔軟度", "common_faults": "中途彎腰破壞直線、膝蓋彎曲", "teaching_cues": "「身體像一支筆」「膝蓋打直」", "risk_level": "低", "mastery_criteria": "全程直膝不彎腰完成", "student_level": "中階", "est_sessions": "10-18", "discipline": "地板", "unlocks": ["FX-ROL-008", "FX-HSP-003"]}, "FX-ROL-004": {"node_id": "FX-ROL-004", "name": "直膝後滾翻", "tier": "滾翻", "family": "滾翻中階", "prerequisites": ["FX-ROL-002", "GEN-STR-001"], "regression": "輔助頂肩後滾翻", "required_qualities": "肩推力量、腿後側柔軟度", "common_faults": "翻滾中膝蓋彎曲、速度不足卡住", "teaching_cues": "「推地板同時腿伸直」", "risk_level": "中", "mastery_criteria": "全程直膝且獨立完成", "student_level": "中階", "est_sessions": "12-20", "discipline": "地板", "unlocks": ["FX-ROL-009", "FX-HSP-005"]}, "FX-ROL-005": {"node_id": "FX-ROL-005", "name": "前滾翻分腿", "tier": "滾翻", "family": "滾翻中階", "prerequisites": ["FX-ROL-001", "GEN-FLEX-002"], "regression": null, "required_qualities": "髖關節柔軟度", "common_faults": "分腿時機過早", "teaching_cues": "「腳快到地板才打開」", "risk_level": "低", "mastery_criteria": "站起無需手扶地", "student_level": "中階", "est_sessions": "8-12", "discipline": "地板", "unlocks": []}, "FX-ROL-006": {"node_id": "FX-ROL-006", "name": "後滾翻分腿", "tier": "滾翻", "family": "滾翻中階", "prerequisites": ["FX-ROL-002", "GEN-FLEX-002"], "regression": null, "required_qualities": "髖關節柔軟度、肩推力量", "common_faults": "分腿過早導致重心不穩、手撐地位置太遠", "teaching_cues": "「先推地再打開腳」", "risk_level": "低", "mastery_criteria": "站起無需手扶地", "student_level": "中階", "est_sessions": "10-15", "discipline": "地板", "unlocks": []}, "FX-ROL-007": {"node_id": "FX-ROL-007", "name": "魚躍前滾翻", "tier": "滾翻", "family": "滾翻中階", "prerequisites": ["FX-ROL-001", "GEN-STR-002"], "regression": "原地小跳前滾翻", "required_qualities": "助跑節奏、起跳控制", "common_faults": "起跳過高失去控制", "teaching_cues": "「跳起後馬上找地板」", "risk_level": "低", "mastery_criteria": "助跑後平順銜接滾翻", "student_level": "中階", "est_sessions": "8-15", "discipline": "地板", "unlocks": ["FX-HSP-004"]}, "FX-ROL-008": {"node_id": "FX-ROL-008", "name": "倒立前滾翻", "tier": "滾翻", "family": "滾翻進階", "prerequisites": ["FX-ROL-003", "GEN-STR-001"], "regression": "靠牆倒立後緩降接前滾翻", "required_qualities": "手倒立控制、核心收折時機", "common_faults": "倒立角度不足直接倒下、收腹時機太早", "teaching_cues": "「先找倒立再收腹滾下」", "risk_level": "中", "mastery_criteria": "經過清楚的倒立姿勢再滾下並站穩", "student_level": "進階", "est_sessions": "12-20", "discipline": "地板", "unlocks": []}, "FX-ROL-009": {"node_id": "FX-ROL-009", "name": "後滾翻倒立", "tier": "滾翻", "family": "滾翻進階", "prerequisites": ["FX-ROL-004", "GEN-STR-001"], "regression": "輔助頂髖翻至倒立", "required_qualities": "肩推爆發力、倒立平衡", "common_faults": "翻起後倒立角度不足即落下、髖部沒推直", "teaching_cues": "「推地同時髖打直」「找到倒立點再落地」", "risk_level": "中", "mastery_criteria": "翻起後可在倒立姿勢停留1-2秒", "student_level": "進階", "est_sessions": "15-25", "discipline": "地板", "unlocks": []}, "FX-HSP-001": {"node_id": "FX-HSP-001", "name": "側手翻(Cartwheel)", "tier": "手翻", "family": "手翻初階", "prerequisites": ["GEN-STR-001", "GEN-FLEX-002"], "regression": "輔助扶手側手翻", "required_qualities": "單臂支撐力、側向空間感", "common_faults": "身體轉向前方而非側面、屈肘", "teaching_cues": "「手腳像時鐘指針依序落地」", "risk_level": "低", "mastery_criteria": "連續3次成一直線不偏移", "student_level": "入門", "est_sessions": "10-20", "discipline": "地板", "unlocks": ["FX-HSP-002", "FX-SLT-005", "VT-HSP-002"]}, "FX-HSP-002": {"node_id": "FX-HSP-002", "name": "側翻內轉(Round-off)", "tier": "手翻", "family": "手翻中階", "prerequisites": ["FX-HSP-001"], "regression": "慢速輪翻(不求落地併腳)", "required_qualities": "轉體180度銜接、下肢併腿爆發力", "common_faults": "落地未面向原方向、身體未打直", "teaching_cues": "「最後併腳同時轉正面」", "risk_level": "低", "mastery_criteria": "落地穩定面朝來時方向", "student_level": "中階", "est_sessions": "12-20", "discipline": "地板", "unlocks": ["FX-HSP-006", "FX-SLT-003", "MT-HSP-001"]}, "FX-HSP-003": {"node_id": "FX-HSP-003", "name": "頭前手翻(Headspring)", "tier": "手翻", "family": "手翻中階", "prerequisites": ["FX-ROL-003"], "regression": "輔助頭手翻", "required_qualities": "頸部力量、推地時機", "common_faults": "推地過早或過晚", "teaching_cues": "「額頭點地後快速推」", "risk_level": "中", "mastery_criteria": "獨立完成落地站穩", "student_level": "中階", "est_sessions": "12-20", "discipline": "地板", "unlocks": ["VT-HSP-005"]}, "FX-HSP-004": {"node_id": "FX-HSP-004", "name": "前手翻(Front Handspring)", "tier": "手翻", "family": "手翻進階", "prerequisites": ["GEN-STR-001", "FX-ROL-007"], "regression": "輔助頂腰前手翻", "required_qualities": "推地爆發力、倒立經過控制", "common_faults": "推地不足、屈肘塌肩", "teaching_cues": "「快推快落」「胸口打開」", "risk_level": "中", "mastery_criteria": "獨立完成落地站穩", "student_level": "中階", "est_sessions": "15-25", "discipline": "地板", "unlocks": ["FX-SLT-001", "MT-HSP-002", "VT-HSP-006"]}, "FX-HSP-005": {"node_id": "FX-HSP-005", "name": "後手翻(Back Handspring/Flic-flac)", "tier": "手翻", "family": "手翻進階", "prerequisites": ["FX-ROL-004", "GEN-STR-001"], "regression": "輔助頂腰後手翻/斜坡後手翻", "required_qualities": "爆發性伸髖、空間定向(向後)", "common_faults": "坐著翻(未伸髖)、找不到手的位置", "teaching_cues": "「先坐後推」「手快速找地板」", "risk_level": "中", "mastery_criteria": "獨立完成連續2次", "student_level": "中階", "est_sessions": "20-35", "discipline": "地板", "unlocks": ["FX-HSP-006", "MT-HSP-003"]}, "FX-HSP-006": {"node_id": "FX-HSP-006", "name": "手翻連接", "tier": "手翻", "family": "手翻進階", "prerequisites": ["FX-HSP-002", "FX-HSP-005"], "regression": "分段練習(輪翻、後手翻分開)", "required_qualities": "銜接節奏、連續爆發力", "common_faults": "銜接處停頓、重心後移過度", "teaching_cues": "「連貫不停頓」", "risk_level": "中", "mastery_criteria": "連續完成2個動作不中斷", "student_level": "進階", "est_sessions": "15-25", "discipline": "地板", "unlocks": []}, "FX-SLT-001": {"node_id": "FX-SLT-001", "name": "團身前空翻(輔助)", "tier": "空翻", "family": "空翻初階", "prerequisites": ["FX-HSP-004", "GEN-AIR-002"], "regression": "保護帶/軟墊輔助前空翻", "required_qualities": "核心收縮速度、翻轉方向感", "common_faults": "早開身體看地、抱膝不緊", "teaching_cues": "「跳起後馬上抱緊」「找地板再打開」", "risk_level": "中", "mastery_criteria": "輔助下能主動完成並落地", "student_level": "中階", "est_sessions": "15-25", "discipline": "地板", "unlocks": ["FX-SLT-002", "MT-SLT-001", "VT-SLT-001"]}, "FX-SLT-002": {"node_id": "FX-SLT-002", "name": "團身前空翻(獨立)", "tier": "空翻", "family": "空翻中階", "prerequisites": ["FX-SLT-001"], "regression": "降低高度重複輔助", "required_qualities": "獨立起跳翻轉控制", "common_faults": "落地重心不穩", "teaching_cues": "「落地前先看地板」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地", "student_level": "進階", "est_sessions": "20-40", "discipline": "地板", "unlocks": ["FX-SLT-005", "FX-SHP-001", "FX-TWS-003", "FX-DBL-002"]}, "FX-SLT-003": {"node_id": "FX-SLT-003", "name": "團身後空翻(輔助,輪翻接)", "tier": "空翻", "family": "空翻初階", "prerequisites": ["FX-HSP-002", "GEN-AIR-002"], "regression": "保護帶/彈網輔助後空翻", "required_qualities": "爆發性向上跳、翻轉抱膝速度", "common_faults": "翻轉不完全、抱膝過鬆", "teaching_cues": "「往上跳不是往後跳」「快速抱緊」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "進階", "est_sessions": "20-35", "discipline": "地板", "unlocks": ["FX-SLT-004", "MT-SLT-003"]}, "FX-SLT-004": {"node_id": "FX-SLT-004", "name": "團身後空翻(獨立)", "tier": "空翻", "family": "空翻中階", "prerequisites": ["FX-SLT-003"], "regression": "降低高度重複輔助/軟墊區練習", "required_qualities": "獨立翻轉控制與落地穩定", "common_faults": "落地過度後仰坐地", "teaching_cues": "「落地前打開找地板」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地", "student_level": "進階", "est_sessions": "25-45", "discipline": "地板", "unlocks": ["FX-SHP-003", "FX-TWS-001", "FX-DBL-001"]}, "FX-SLT-005": {"node_id": "FX-SLT-005", "name": "側空翻(Aerial Cartwheel,無手翻)", "tier": "空翻", "family": "空翻中階", "prerequisites": ["FX-HSP-001", "FX-SLT-002"], "regression": "輔助側空翻", "required_qualities": "側向爆發力與空中定向", "common_faults": "手提前碰地面(等於側手翻)", "teaching_cues": "「腳先找地板，手不要伸出去」", "risk_level": "高", "mastery_criteria": "連續3次不碰手完成", "student_level": "進階", "est_sessions": "20-35", "discipline": "地板", "unlocks": []}, "FX-SHP-001": {"node_id": "FX-SHP-001", "name": "屈體前空翻(Pike)", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["FX-SLT-002"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體角度不足、膝蓋彎曲", "teaching_cues": "「手摸腳尖」「腿伸直」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定", "student_level": "進階", "est_sessions": "15-25", "discipline": "地板", "unlocks": ["FX-SHP-002", "FX-DBL-002", "MT-SHP-001", "VT-SHP-001"]}, "FX-SHP-002": {"node_id": "FX-SHP-002", "name": "直體前空翻(Layout)", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["FX-SHP-001"], "regression": null, "required_qualities": "翻轉速度控制、身體張力", "common_faults": "提早彎曲變成屈體", "teaching_cues": "「全程身體打直」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定", "student_level": "進階", "est_sessions": "20-30", "discipline": "地板", "unlocks": []}, "FX-SHP-003": {"node_id": "FX-SHP-003", "name": "屈體後空翻(Pike)", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["FX-SLT-004"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體不足變半團身", "teaching_cues": "「屁股帶動腿往上摺」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定", "student_level": "進階", "est_sessions": "18-28", "discipline": "地板", "unlocks": ["FX-SHP-004", "FX-DBL-001", "MT-SHP-003"]}, "FX-SHP-004": {"node_id": "FX-SHP-004", "name": "直體後空翻(Layout)", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["FX-SHP-003"], "regression": null, "required_qualities": "極高翻轉爆發力、身體張力控制", "common_faults": "翻轉不足提早睜眼找地", "teaching_cues": "「全程繃緊像一塊板子」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定", "student_level": "進階", "est_sessions": "25-40", "discipline": "地板", "unlocks": []}, "FX-TWS-001": {"node_id": "FX-TWS-001", "name": "後空翻轉體180(Half Twist)", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["FX-SLT-004"], "regression": "慢速地面轉體練習(無翻轉)", "required_qualities": "軸向轉體控制、單側視覺定向", "common_faults": "轉體時機過早導致翻轉不完全", "teaching_cues": "「翻到一半再轉」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成", "student_level": "進階", "est_sessions": "15-25", "discipline": "地板", "unlocks": ["FX-TWS-002", "VT-TWS-001"]}, "FX-TWS-002": {"node_id": "FX-TWS-002", "name": "後空翻轉體360(Full Twist)", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["FX-TWS-001"], "regression": null, "required_qualities": "轉體速度與翻轉節奏同步", "common_faults": "轉體不完整落地歪斜", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-35", "discipline": "地板", "unlocks": ["FX-TWS-006"]}, "FX-TWS-003": {"node_id": "FX-TWS-003", "name": "前空翻轉體180", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["FX-SLT-002"], "regression": null, "required_qualities": "前翻軸向轉體控制", "common_faults": "轉體方向與翻轉方向混淆", "teaching_cues": "「先確定轉的方向再起跳」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成", "student_level": "進階", "est_sessions": "15-25", "discipline": "地板", "unlocks": ["FX-TWS-004"]}, "FX-TWS-004": {"node_id": "FX-TWS-004", "name": "前空翻轉體360", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["FX-TWS-003"], "regression": null, "required_qualities": "前翻轉體速度與翻轉節奏同步", "common_faults": "轉體不完整落地歪斜", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-35", "discipline": "地板", "unlocks": ["FX-TWS-005"]}, "FX-TWS-005": {"node_id": "FX-TWS-005", "name": "前空翻轉體540/720(進階)", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["FX-TWS-004"], "regression": null, "required_qualities": "極高轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "地板", "unlocks": []}, "FX-TWS-006": {"node_id": "FX-TWS-006", "name": "後空翻轉體540/720(進階)", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["FX-TWS-002"], "regression": null, "required_qualities": "極高轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "地板", "unlocks": []}, "FX-DBL-001": {"node_id": "FX-DBL-001", "name": "團身後空翻兩周(Double Back Tuck)", "tier": "空翻周數變化", "family": "後空翻周數", "prerequisites": ["FX-SLT-004", "FX-SHP-003"], "regression": "彈網/坑池輔助雙周後空翻", "required_qualities": "極高起跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "在坑池/保護帶輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "地板", "unlocks": []}, "FX-DBL-002": {"node_id": "FX-DBL-002", "name": "團身前空翻兩周", "tier": "空翻周數變化", "family": "前空翻周數", "prerequisites": ["FX-SLT-002", "FX-SHP-001"], "regression": "彈網/坑池輔助雙周前空翻", "required_qualities": "極高起跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "在坑池/保護帶輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "地板", "unlocks": ["VT-DBL-001"]}, "MT-BAS-001": {"node_id": "MT-BAS-001", "name": "立彈垂直跳", "tier": "直立", "family": "上板基礎", "prerequisites": ["GEN-STR-002", "GEN-LAND-001"], "regression": "原地上板踏跳", "required_qualities": "助跑節奏與踏跳時機、身體伸直控制", "common_faults": "踏跳點不準、重心後仰", "teaching_cues": "「踏在板中間」「垂直往上」", "risk_level": "低", "mastery_criteria": "連續3次踏跳點穩定且身體維持直線", "student_level": "入門", "est_sessions": "4-8", "discipline": "小彈翻床", "unlocks": ["MT-BAS-002", "MT-BAS-003", "MT-BAS-004", "MT-BAS-005", "MT-BAS-007", "MT-HSP-001", "MT-HSP-002", "MT-HSP-003", "MT-SLT-001", "MT-SLT-003"]}, "MT-BAS-002": {"node_id": "MT-BAS-002", "name": "立彈團身跳", "tier": "直立", "family": "上板基礎", "prerequisites": ["MT-BAS-001", "GEN-AIR-002"], "regression": null, "required_qualities": "核心收折速度", "common_faults": "膝蓋彎曲、手未摸到腳、落地重心不穩", "teaching_cues": "「手摸腳尖」「跳起馬上抱膝」", "risk_level": "低", "mastery_criteria": "連續3次抱膝角度足夠且穩定落地", "student_level": "入門", "est_sessions": "4-8", "discipline": "小彈翻床", "unlocks": []}, "MT-BAS-003": {"node_id": "MT-BAS-003", "name": "立彈分腿跳", "tier": "直立", "family": "上板基礎", "prerequisites": ["MT-BAS-001", "GEN-AIR-003"], "regression": null, "required_qualities": "髖關節柔軟度", "common_faults": "分腿角度不足、落地重心偏移", "teaching_cues": "「手摸腳尖，腳打開像剪刀」", "risk_level": "低", "mastery_criteria": "連續3次分腿角度達標且穩定落地", "student_level": "入門", "est_sessions": "4-8", "discipline": "小彈翻床", "unlocks": []}, "MT-BAS-004": {"node_id": "MT-BAS-004", "name": "立彈屈體跳", "tier": "直立", "family": "上板基礎", "prerequisites": ["MT-BAS-001", "GEN-AIR-004"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "膝蓋彎曲、屈體角度不足", "teaching_cues": "「手摸腳尖，膝蓋打直」", "risk_level": "低", "mastery_criteria": "連續3次屈體角度達標且穩定落地", "student_level": "入門", "est_sessions": "4-8", "discipline": "小彈翻床", "unlocks": []}, "MT-BAS-005": {"node_id": "MT-BAS-005", "name": "立彈垂直跳轉180度", "tier": "直立", "family": "上板基礎", "prerequisites": ["MT-BAS-001", "GEN-AIR-005"], "regression": null, "required_qualities": "起跳中軸向轉體控制", "common_faults": "轉體時身體歪斜、落地方向不準", "teaching_cues": "「眼睛帶頭轉」", "risk_level": "低", "mastery_criteria": "連續3次穩定完成落地方向準確", "student_level": "入門", "est_sessions": "4-6", "discipline": "小彈翻床", "unlocks": ["MT-BAS-006"]}, "MT-BAS-006": {"node_id": "MT-BAS-006", "name": "立彈垂直跳轉360度", "tier": "直立", "family": "上板基礎", "prerequisites": ["MT-BAS-005", "GEN-AIR-006"], "regression": "分兩次轉180度銜接", "required_qualities": "全視野轉體空間定向感", "common_faults": "轉體中途睜眼找板、轉不滿360度", "teaching_cues": "「眼睛跟轉、腳步跟上」", "risk_level": "低", "mastery_criteria": "連續3次完整轉滿360度且落地穩定", "student_level": "入門", "est_sessions": "6-10", "discipline": "小彈翻床", "unlocks": []}, "MT-BAS-007": {"node_id": "MT-BAS-007", "name": "立彈魚躍前滾翻", "tier": "滾翻", "family": "上板基礎", "prerequisites": ["MT-BAS-001", "FX-ROL-001"], "regression": "降低板高/教練扶助", "required_qualities": "空中翻轉方向感", "common_faults": "落地時機抓不準、下墊角度過陡", "teaching_cues": "「起跳後馬上找地板團身」", "risk_level": "中", "mastery_criteria": "連續完成落地穩定", "student_level": "中階", "est_sessions": "8-12", "discipline": "小彈翻床", "unlocks": []}, "MT-HSP-001": {"node_id": "MT-HSP-001", "name": "立彈側翻內轉", "tier": "手翻", "family": "銜接手翻", "prerequisites": ["MT-BAS-001", "FX-HSP-002"], "regression": "教練扶腰輔助", "required_qualities": "側向轉體控制、推地時機", "common_faults": "轉體不完全、落地未正面朝前", "teaching_cues": "「推地同時轉正面」", "risk_level": "中", "mastery_criteria": "獨立完成落地穩定", "student_level": "中階", "est_sessions": "10-15", "discipline": "小彈翻床", "unlocks": []}, "MT-HSP-002": {"node_id": "MT-HSP-002", "name": "立彈前手翻", "tier": "手翻", "family": "銜接手翻", "prerequisites": ["MT-BAS-001", "FX-HSP-004"], "regression": "教練扶腰輔助", "required_qualities": "推地時機、空中身體控制", "common_faults": "推地不足、落地重心前傾", "teaching_cues": "「快推快落」", "risk_level": "中", "mastery_criteria": "獨立完成落地穩定", "student_level": "中階", "est_sessions": "12-20", "discipline": "小彈翻床", "unlocks": []}, "MT-HSP-003": {"node_id": "MT-HSP-003", "name": "倒立下後手翻", "tier": "手翻", "family": "銜接手翻", "prerequisites": ["MT-BAS-001", "FX-HSP-005"], "regression": "教練扶腰輔助後手翻", "required_qualities": "爆發性伸髖、空間定向(向後)", "common_faults": "坐著翻(未伸髖)、板上重心偏移", "teaching_cues": "「先坐後推」「保持身體對齊板中線」", "risk_level": "中", "mastery_criteria": "連續2次穩定完成", "student_level": "中階", "est_sessions": "15-22", "discipline": "小彈翻床", "unlocks": []}, "MT-SLT-001": {"node_id": "MT-SLT-001", "name": "立彈團身前空翻(輔助)", "tier": "空翻", "family": "前空翻", "prerequisites": ["MT-BAS-001", "FX-SLT-001"], "regression": "降低板高+教練保護帶", "required_qualities": "翻轉方向感、抱膝速度", "common_faults": "早開身體看地", "teaching_cues": "「跳起馬上抱緊」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "中階", "est_sessions": "15-25", "discipline": "小彈翻床", "unlocks": ["MT-SLT-002"]}, "MT-SLT-002": {"node_id": "MT-SLT-002", "name": "立彈團身前空翻", "tier": "空翻", "family": "前空翻", "prerequisites": ["MT-SLT-001"], "regression": "回到輔助/保護帶重複", "required_qualities": "獨立翻轉與落地控制", "common_faults": "落地重心不穩", "teaching_cues": "「落地前先找地板」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地", "student_level": "進階", "est_sessions": "20-35", "discipline": "小彈翻床", "unlocks": ["MT-SHP-001", "MT-TWS-001", "MT-DBL-001"]}, "MT-SLT-003": {"node_id": "MT-SLT-003", "name": "倒立下團身後空翻(輔助)", "tier": "空翻", "family": "後空翻", "prerequisites": ["MT-BAS-001", "FX-SLT-003"], "regression": "降低板高+教練保護帶", "required_qualities": "向上爆發力、抱膝速度", "common_faults": "翻轉不完全", "teaching_cues": "「往上跳不是往後跳」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "進階", "est_sessions": "20-30", "discipline": "小彈翻床", "unlocks": ["MT-SLT-004"]}, "MT-SLT-004": {"node_id": "MT-SLT-004", "name": "倒立下團身後空翻", "tier": "空翻", "family": "後空翻", "prerequisites": ["MT-SLT-003"], "regression": "回到輔助/保護帶重複", "required_qualities": "獨立翻轉與落地控制", "common_faults": "落地後仰坐地", "teaching_cues": "「落地前打開找地板」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地", "student_level": "進階", "est_sessions": "25-40", "discipline": "小彈翻床", "unlocks": ["MT-SHP-003", "MT-TWS-004", "MT-DBL-002"]}, "MT-SHP-001": {"node_id": "MT-SHP-001", "name": "立彈屈體前空翻", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["MT-SLT-002", "FX-SHP-001"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體角度不足", "teaching_cues": "「手摸腳尖」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定", "student_level": "進階", "est_sessions": "15-25", "discipline": "小彈翻床", "unlocks": ["MT-SHP-002"]}, "MT-SHP-002": {"node_id": "MT-SHP-002", "name": "立彈直體前空翻", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["MT-SHP-001"], "regression": null, "required_qualities": "身體張力控制", "common_faults": "提早彎曲變成屈體", "teaching_cues": "「全程身體打直」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定", "student_level": "進階", "est_sessions": "20-30", "discipline": "小彈翻床", "unlocks": ["MT-DBL-001"]}, "MT-SHP-003": {"node_id": "MT-SHP-003", "name": "倒立下屈體後空翻", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["MT-SLT-004", "FX-SHP-003"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體不足變半團身", "teaching_cues": "「屁股帶動腿往上摺」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定", "student_level": "進階", "est_sessions": "18-28", "discipline": "小彈翻床", "unlocks": ["MT-SHP-004"]}, "MT-SHP-004": {"node_id": "MT-SHP-004", "name": "倒立下直體後空翻", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["MT-SHP-003"], "regression": null, "required_qualities": "極高翻轉爆發力", "common_faults": "翻轉不足", "teaching_cues": "「全程繃緊」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定", "student_level": "進階", "est_sessions": "25-35", "discipline": "小彈翻床", "unlocks": ["MT-DBL-002"]}, "MT-TWS-001": {"node_id": "MT-TWS-001", "name": "立彈前空翻轉體180度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["MT-SLT-002"], "regression": null, "required_qualities": "前翻軸向轉體控制", "common_faults": "轉體方向與翻轉方向混淆", "teaching_cues": "「先確定轉的方向」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "小彈翻床", "unlocks": ["MT-TWS-002"]}, "MT-TWS-002": {"node_id": "MT-TWS-002", "name": "立彈前空翻轉體360度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["MT-TWS-001"], "regression": null, "required_qualities": "轉體與翻轉節奏同步", "common_faults": "落地方向偏移", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-30", "discipline": "小彈翻床", "unlocks": ["MT-TWS-003"]}, "MT-TWS-003": {"node_id": "MT-TWS-003", "name": "立彈前空翻轉體(540/720)度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["MT-TWS-002"], "regression": null, "required_qualities": "極高轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-45", "discipline": "小彈翻床", "unlocks": []}, "MT-TWS-004": {"node_id": "MT-TWS-004", "name": "倒立下後空翻轉體180度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["MT-SLT-004"], "regression": null, "required_qualities": "軸向轉體控制、單側視覺定向", "common_faults": "轉體時機過早導致翻轉不完全", "teaching_cues": "「翻到一半再轉」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "小彈翻床", "unlocks": ["MT-TWS-005"]}, "MT-TWS-005": {"node_id": "MT-TWS-005", "name": "倒立下後空翻轉體360度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["MT-TWS-004"], "regression": null, "required_qualities": "轉體與翻轉節奏同步", "common_faults": "轉體不完整落地歪斜", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-30", "discipline": "小彈翻床", "unlocks": ["MT-TWS-006"]}, "MT-TWS-006": {"node_id": "MT-TWS-006", "name": "倒立下後空翻轉體(540/720)度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["MT-TWS-005"], "regression": null, "required_qualities": "極高轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "小彈翻床", "unlocks": []}, "MT-DBL-001": {"node_id": "MT-DBL-001", "name": "立彈團身前空翻兩周", "tier": "空翻周數變化", "family": "前空翻周數", "prerequisites": ["MT-SLT-002", "MT-SHP-002"], "regression": "坑池/彈網輔助", "required_qualities": "極高起跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "在坑池/保護帶輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "小彈翻床", "unlocks": []}, "MT-DBL-002": {"node_id": "MT-DBL-002", "name": "倒立下團身後空翻兩周", "tier": "空翻周數變化", "family": "後空翻周數", "prerequisites": ["MT-SLT-004", "MT-SHP-004"], "regression": "坑池/彈網輔助", "required_qualities": "極高起跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "在坑池/保護帶輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "小彈翻床", "unlocks": []}, "VT-BAS-001": {"node_id": "VT-BAS-001", "name": "助跑踏跳基礎(單腳→雙腳起跳)", "tier": "基礎", "family": "上板基礎", "prerequisites": ["GEN-STR-002"], "regression": "原地雙腳踏跳", "required_qualities": "助跑節奏轉換雙腳起跳", "common_faults": "踏跳點不準、單腳起跳未確實轉雙腳", "teaching_cues": "「跑—跳—踩」", "risk_level": "低", "mastery_criteria": "連續3次踏跳點穩定", "student_level": "入門", "est_sessions": "4-8", "discipline": "跳板(馬)", "unlocks": ["VT-BAS-002", "VT-BAS-003", "VT-BAS-004", "VT-BAS-005"]}, "VT-BAS-002": {"node_id": "VT-BAS-002", "name": "垂直跳騰躍上箱", "tier": "直立", "family": "上箱基礎", "prerequisites": ["VT-BAS-001"], "regression": "原地跳上箱(不助跑)", "required_qualities": "助跑轉垂直跳的節奏控制、核心穩定", "common_faults": "跳上箱時重心前傾、雙腳未同時落箱", "teaching_cues": "「跳起來，穩穩落在箱上」", "risk_level": "低", "mastery_criteria": "連續3次穩定跳上箱面站穩", "student_level": "入門", "est_sessions": "4-6", "discipline": "跳板(馬)", "unlocks": ["VT-BAS-006", "VT-HSP-005"]}, "VT-BAS-003": {"node_id": "VT-BAS-003", "name": "團身騰越下", "tier": "直立", "family": "上箱基礎", "prerequisites": ["VT-BAS-001", "GEN-CORE-001"], "regression": "低箱團身騰越", "required_qualities": "核心收折速度、推手時機", "common_faults": "抱膝太晚導致撞箱、身體重心後坐", "teaching_cues": "「手推地，膝蓋馬上收到胸前」", "risk_level": "低", "mastery_criteria": "連續3次穩定站上箱面", "student_level": "入門", "est_sessions": "6-10", "discipline": "跳板(馬)", "unlocks": []}, "VT-BAS-004": {"node_id": "VT-BAS-004", "name": "分腿騰越下", "tier": "直立", "family": "上箱基礎", "prerequisites": ["VT-BAS-001", "GEN-FLEX-002"], "regression": "低箱分腿騰越", "required_qualities": "髖關節柔軟度、手推力量", "common_faults": "推手不足導致坐上箱面", "teaching_cues": "「手推、腳打開」", "risk_level": "低", "mastery_criteria": "連續3次穩定站上箱面", "student_level": "入門", "est_sessions": "6-10", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-001", "VT-HSP-006"]}, "VT-BAS-005": {"node_id": "VT-BAS-005", "name": "屈體騰越下", "tier": "直立", "family": "上箱基礎", "prerequisites": ["VT-BAS-001", "GEN-CORE-001"], "regression": "低箱屈體騰越", "required_qualities": "核心收折速度", "common_faults": "膝蓋撞箱、推手時機過早", "teaching_cues": "「手推完再收膝」", "risk_level": "低", "mastery_criteria": "連續3次穩定站上箱面", "student_level": "入門", "est_sessions": "6-10", "discipline": "跳板(馬)", "unlocks": []}, "VT-BAS-006": {"node_id": "VT-BAS-006", "name": "前滾翻騰躍下", "tier": "滾翻", "family": "上箱基礎", "prerequisites": ["VT-BAS-002", "GEN-STR-001"], "regression": "教練扶助支撐推離", "required_qualities": "手臂支撐推離力量", "common_faults": "支撐時間過長、推離無力", "teaching_cues": "「手一碰箱馬上推開」", "risk_level": "低", "mastery_criteria": "連續3次乾淨推離落地穩定", "student_level": "入門", "est_sessions": "8-12", "discipline": "跳板(馬)", "unlocks": []}, "VT-HSP-001": {"node_id": "VT-HSP-001", "name": "倒立騰越下(至背躺)", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-BAS-004", "GEN-STR-001"], "regression": "教練扶助,降低助跑速度", "required_qualities": "倒立支撐時的髖打開角度、落地緩衝(背部)", "common_faults": "推手不足導致無法完全翻轉、落地時未團身保護頭頸", "teaching_cues": "「手推地後放膽讓身體翻過去」「下巴收，背部先著地」", "risk_level": "中", "mastery_criteria": "連續3次安全完成並穩定落於背部", "student_level": "中階", "est_sessions": "10-15", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-002"]}, "VT-HSP-002": {"node_id": "VT-HSP-002", "name": "側翻轉翻騰越下1/4下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-001", "FX-HSP-001"], "regression": "低箱+教練扶助", "required_qualities": "側向轉體控制、推手時機", "common_faults": "轉體不足1/4、落地方向不正", "teaching_cues": "「推地同時開始轉」", "risk_level": "中", "mastery_criteria": "連續3次轉滿1/4且落地方向正確", "student_level": "中階", "est_sessions": "12-18", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-003"]}, "VT-HSP-003": {"node_id": "VT-HSP-003", "name": "側翻轉翻騰越下3/4下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-002"], "regression": "降低助跑速度重複練習", "required_qualities": "更高轉體速度與空中定向", "common_faults": "轉體過快或不足導致落地偏轉", "teaching_cues": "「轉體要快、眼睛找地板」", "risk_level": "高", "mastery_criteria": "連續3次轉滿3/4且落地穩定", "student_level": "進階", "est_sessions": "15-22", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-004"]}, "VT-HSP-004": {"node_id": "VT-HSP-004", "name": "側翻轉翻騰越下5/4下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-003"], "regression": null, "required_qualities": "極高轉體速度控制", "common_faults": "轉體不足5/4圈、落地嚴重偏轉", "teaching_cues": "「加快轉體、盯緊落地點」", "risk_level": "高", "mastery_criteria": "連續2-3次穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "跳板(馬)", "unlocks": []}, "VT-HSP-005": {"node_id": "VT-HSP-005", "name": "頭前手翻騰越下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-BAS-002", "FX-HSP-003"], "regression": "低箱+教練扶助頭手翻", "required_qualities": "頸部力量、推地時機", "common_faults": "推地過早或過晚、額頭撞板過久", "teaching_cues": "「額頭點板後快速推」", "risk_level": "中", "mastery_criteria": "獨立完成落地站穩", "student_level": "中階", "est_sessions": "12-20", "discipline": "跳板(馬)", "unlocks": []}, "VT-HSP-006": {"node_id": "VT-HSP-006", "name": "前手翻騰越下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-BAS-004", "FX-HSP-004"], "regression": "低箱+教練扶助", "required_qualities": "完整助跑—踏跳—推手—落地銜接", "common_faults": "落地前身體未打開、重心過前", "teaching_cues": "「推離後找地板」", "risk_level": "中", "mastery_criteria": "連續3次獨立完成落地穩定", "student_level": "中階", "est_sessions": "20-30", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-007", "VT-SLT-001"]}, "VT-HSP-007": {"node_id": "VT-HSP-007", "name": "前手翻轉體180度騰越下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-006"], "regression": "降低助跑速度重複練習", "required_qualities": "推離後轉體控制", "common_faults": "轉體時機過早、落地方向偏移", "teaching_cues": "「推離後立即轉體」", "risk_level": "高", "mastery_criteria": "連續3次轉滿180度且落地方向正確", "student_level": "進階", "est_sessions": "20-28", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-008", "VT-TWS-001"]}, "VT-HSP-008": {"node_id": "VT-HSP-008", "name": "前手翻轉體360度騰越下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-007"], "regression": null, "required_qualities": "極高轉體速度與翻轉節奏同步", "common_faults": "轉體不足360度、落地嚴重偏轉", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "連續3次轉滿360度且落地方向正確", "student_level": "進階", "est_sessions": "25-35", "discipline": "跳板(馬)", "unlocks": ["VT-HSP-009"]}, "VT-HSP-009": {"node_id": "VT-HSP-009", "name": "前手翻轉體540度騰越下", "tier": "手翻", "family": "手翻騰越", "prerequisites": ["VT-HSP-008"], "regression": null, "required_qualities": "極致轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-45", "discipline": "跳板(馬)", "unlocks": []}, "VT-SLT-001": {"node_id": "VT-SLT-001", "name": "團身前空翻下馬(輔助)", "tier": "空翻", "family": "前空翻騰越", "prerequisites": ["VT-HSP-006", "FX-SLT-001"], "regression": "教練保護帶輔助/降低助跑速度", "required_qualities": "推離後翻轉方向感", "common_faults": "推離不足、翻轉不完全", "teaching_cues": "「推離後馬上抱緊」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "進階", "est_sessions": "20-30", "discipline": "跳板(馬)", "unlocks": ["VT-SLT-002"]}, "VT-SLT-002": {"node_id": "VT-SLT-002", "name": "團身前空翻下馬(獨立)", "tier": "空翻", "family": "前空翻騰越", "prerequisites": ["VT-SLT-001"], "regression": "回到輔助練習", "required_qualities": "獨立翻轉與落地控制", "common_faults": "落地重心不穩", "teaching_cues": "「落地前找地板」", "risk_level": "高", "mastery_criteria": "連續3次獨立完成穩定落地", "student_level": "進階", "est_sessions": "25-40", "discipline": "跳板(馬)", "unlocks": ["VT-SHP-001", "VT-DBL-001"]}, "VT-SHP-001": {"node_id": "VT-SHP-001", "name": "屈體前空翻下馬", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["VT-SLT-002", "FX-SHP-001"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體角度不足", "teaching_cues": "「手摸腳尖」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定", "student_level": "進階", "est_sessions": "20-30", "discipline": "跳板(馬)", "unlocks": ["VT-SHP-002"]}, "VT-SHP-002": {"node_id": "VT-SHP-002", "name": "直體前空翻下馬", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["VT-SHP-001"], "regression": null, "required_qualities": "極高身體張力控制", "common_faults": "提早彎曲", "teaching_cues": "「全程身體打直」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "跳板(馬)", "unlocks": []}, "VT-TWS-001": {"node_id": "VT-TWS-001", "name": "手翻轉體騰越(轉體下馬,進階)", "tier": "空翻轉體", "family": "轉體騰越", "prerequisites": ["VT-HSP-007", "FX-TWS-001"], "regression": null, "required_qualities": "極高推離爆發力與轉體控制", "common_faults": "轉體不完整", "teaching_cues": "「推離後立即轉體」", "risk_level": "高", "mastery_criteria": "在低助跑速度、教練保護帶輔助下能完成完整180度以上轉體並落地方向大致正確，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "跳板(馬)", "unlocks": []}, "VT-DBL-001": {"node_id": "VT-DBL-001", "name": "前手翻接團身空翻兩周下馬(選手)", "tier": "空翻周數變化", "family": "周數騰越", "prerequisites": ["VT-SLT-002", "FX-DBL-002"], "regression": null, "required_qualities": "極致爆發力與空中控制", "common_faults": "推離後高度不足、空中抱膝時機過晚導致轉速不夠", "teaching_cues": "「推離要快、抱得要緊」「教練保護帶全程跟隨」", "risk_level": "高", "mastery_criteria": "在坑池/安全氣墊且教練保護帶輔助下，動作型態正確地完成，暫不要求連續次數或脫離輔助", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "40+", "discipline": "跳板(馬)", "unlocks": []}, "TR-BAS-001": {"node_id": "TR-BAS-001", "name": "連續垂直跳", "tier": "直立", "family": "基本彈跳", "prerequisites": ["GEN-CORE-001", "GEN-LAND-001"], "regression": "扶把手彈跳", "required_qualities": "重心控制、連續節奏", "common_faults": "彈跳偏移床面中心、落地重心不穩", "teaching_cues": "「眼睛看前方固定點」「落地找中心」", "risk_level": "低", "mastery_criteria": "連續10次彈跳維持在床面中心", "student_level": "入門", "est_sessions": "4-8", "discipline": "大彈翻床", "unlocks": ["TR-BAS-002", "TR-BAS-003", "TR-BAS-004", "TR-BAS-005", "TR-BAS-007", "TR-HSP-001"]}, "TR-BAS-002": {"node_id": "TR-BAS-002", "name": "團身跳", "tier": "直立", "family": "基本彈跳", "prerequisites": ["TR-BAS-001"], "regression": null, "required_qualities": "核心收折速度", "common_faults": "抬膝不對稱、落地重心前後偏移", "teaching_cues": "「膝蓋抬到胸口」", "risk_level": "低", "mastery_criteria": "連續5次穩定完成", "student_level": "入門", "est_sessions": "4-6", "discipline": "大彈翻床", "unlocks": []}, "TR-BAS-003": {"node_id": "TR-BAS-003", "name": "分腿跳", "tier": "直立", "family": "基本彈跳", "prerequisites": ["TR-BAS-001", "GEN-FLEX-002"], "regression": null, "required_qualities": "髖關節柔軟度", "common_faults": "分腿角度不足、手未摸到腳", "teaching_cues": "「手摸腳尖」", "risk_level": "低", "mastery_criteria": "連續5次穩定完成", "student_level": "入門", "est_sessions": "4-8", "discipline": "大彈翻床", "unlocks": []}, "TR-BAS-004": {"node_id": "TR-BAS-004", "name": "屈體跳", "tier": "直立", "family": "基本彈跳", "prerequisites": ["TR-BAS-001", "GEN-FLEX-002"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "膝蓋彎曲、屈體角度不足", "teaching_cues": "「手摸腳尖，膝蓋打直」", "risk_level": "低", "mastery_criteria": "連續5次穩定完成", "student_level": "入門", "est_sessions": "4-6", "discipline": "大彈翻床", "unlocks": ["TR-HSP-003", "TR-HSP-004"]}, "TR-BAS-005": {"node_id": "TR-BAS-005", "name": "垂直跳轉180度", "tier": "直立", "family": "基本彈跳", "prerequisites": ["TR-BAS-001"], "regression": null, "required_qualities": "起跳中軸向轉體控制", "common_faults": "轉體時身體歪斜、落地偏離中心", "teaching_cues": "「眼睛帶頭轉」", "risk_level": "低", "mastery_criteria": "連續5次穩定完成落地方向準確", "student_level": "入門", "est_sessions": "4-6", "discipline": "大彈翻床", "unlocks": ["TR-BAS-006", "TR-HSP-002", "TR-HSP-005", "TR-HSP-006"]}, "TR-BAS-006": {"node_id": "TR-BAS-006", "name": "垂直跳轉360度", "tier": "直立", "family": "基本彈跳", "prerequisites": ["TR-BAS-005"], "regression": "分兩次轉180度銜接", "required_qualities": "全視野轉體空間定向感", "common_faults": "轉體中途睜眼找床、轉不滿360度", "teaching_cues": "「眼睛跟轉、腳步跟上」", "risk_level": "低", "mastery_criteria": "連續3次完整轉滿360度且落地穩定在中心", "student_level": "入門", "est_sessions": "6-10", "discipline": "大彈翻床", "unlocks": []}, "TR-BAS-007": {"node_id": "TR-BAS-007", "name": "坐彈", "tier": "臀落", "family": "姿勢跳基礎", "prerequisites": ["TR-BAS-001"], "regression": "低彈跳幅度坐跳", "required_qualities": "核心與髖屈肌控制", "common_faults": "手撐地時機錯誤、落地重心後倒", "teaching_cues": "「手放身體兩側輕觸床面」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "入門", "est_sessions": "6-10", "discipline": "大彈翻床", "unlocks": ["TR-BAS-008", "TR-HSP-005", "TR-HSP-006", "TR-HSP-011", "TR-HSP-012"]}, "TR-BAS-008": {"node_id": "TR-BAS-008", "name": "坐彈接足落", "tier": "臀落", "family": "姿勢跳基礎", "prerequisites": ["TR-BAS-007"], "regression": null, "required_qualities": "核心快速收折回站姿", "common_faults": "回站姿時機過晚導致重心不穩", "teaching_cues": "「碰到床馬上收腿站起」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成", "student_level": "入門", "est_sessions": "6-10", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-001": {"node_id": "TR-HSP-001", "name": "膝彈接足落", "tier": "膝落", "family": "姿勢跳基礎", "prerequisites": ["TR-BAS-001", "GEN-FLEX-002"], "regression": "教練扶膝跳", "required_qualities": "膝關節緩衝控制、核心快速收折回站姿", "common_faults": "落地時膝蓋沒對齊床面中心、起身太慢重心不穩", "teaching_cues": "「膝蓋輕觸床，馬上站起來」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "入門", "est_sessions": "8-12", "discipline": "大彈翻床", "unlocks": ["TR-HSP-002"]}, "TR-HSP-002": {"node_id": "TR-HSP-002", "name": "手膝落接足落", "tier": "手膝落", "family": "姿勢跳基礎", "prerequisites": ["TR-HSP-001", "TR-BAS-005"], "regression": "分段練習", "required_qualities": "連續銜接節奏控制", "common_faults": "銜接處失去中心點", "teaching_cues": "「維持在床面中心」", "risk_level": "中", "mastery_criteria": "連續完成2個動作不偏移中心", "student_level": "中階", "est_sessions": "12-18", "discipline": "大彈翻床", "unlocks": ["TR-SLT-001"]}, "TR-HSP-003": {"node_id": "TR-HSP-003", "name": "腹彈接足落", "tier": "腹落", "family": "姿勢跳基礎", "prerequisites": ["TR-BAS-004"], "regression": "教練扶助腹跳", "required_qualities": "核心與髖伸展控制", "common_faults": "落地時腰部過度後仰", "teaching_cues": "「身體打直、手先觸床」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "中階", "est_sessions": "10-15", "discipline": "大彈翻床", "unlocks": ["TR-HSP-009", "TR-HSP-011", "TR-HSP-012", "TR-HSP-013", "TR-HSP-014", "TR-HSP-015", "TR-SLT-007"]}, "TR-HSP-004": {"node_id": "TR-HSP-004", "name": "背彈接足落", "tier": "背落", "family": "姿勢跳基礎", "prerequisites": ["TR-BAS-004", "GEN-AIR-001"], "regression": "教練扶助背跳", "required_qualities": "空間定向(向後倒地不恐懼)", "common_faults": "頭部後仰過度、手未護頸", "teaching_cues": "「下巴收，手護在胸前」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "中階", "est_sessions": "10-15", "discipline": "大彈翻床", "unlocks": ["TR-HSP-008", "TR-HSP-013", "TR-HSP-015", "TR-HSP-016", "TR-HSP-017", "TR-SLT-004", "TR-SLT-006"]}, "TR-HSP-005": {"node_id": "TR-HSP-005", "name": "垂直跳轉180度接臀落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-BAS-005", "TR-BAS-007"], "regression": "分段:先轉180度、再單獨練坐彈", "required_qualities": "轉體與坐姿收髖時機同步", "common_faults": "轉體不足180度就坐下、坐下時機過早", "teaching_cues": "「轉滿180度再坐下」", "risk_level": "中", "mastery_criteria": "連續3次轉滿180度且穩定坐彈回站姿", "student_level": "中階", "est_sessions": "8-12", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-006": {"node_id": "TR-HSP-006", "name": "坐彈接轉體180度至足落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-BAS-007", "TR-BAS-005"], "regression": "分段練習(坐彈、轉體180度分開)", "required_qualities": "坐姿彈起後的轉體控制", "common_faults": "彈起高度不足、轉體不到180度", "teaching_cues": "「坐彈彈起同時轉身」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並站穩", "student_level": "中階", "est_sessions": "10-15", "discipline": "大彈翻床", "unlocks": ["TR-HSP-007", "TR-HSP-008", "TR-HSP-009"]}, "TR-HSP-007": {"node_id": "TR-HSP-007", "name": "坐彈接轉體180度至臀落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-006"], "regression": null, "required_qualities": "連續兩次坐姿的核心控制與轉體節奏", "common_faults": "第二次坐下重心不穩、轉體方向錯誤", "teaching_cues": "「轉滿180度再坐下」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成", "student_level": "中階", "est_sessions": "12-18", "discipline": "大彈翻床", "unlocks": ["TR-HSP-010"]}, "TR-HSP-008": {"node_id": "TR-HSP-008", "name": "坐彈接轉體180度至背落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-004", "TR-HSP-006"], "regression": "教練保護帶輔助", "required_qualities": "坐姿轉背落的空間定向", "common_faults": "轉體時機錯誤導致背部未對準床面", "teaching_cues": "「轉身同時放低上半身」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "15-22", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-009": {"node_id": "TR-HSP-009", "name": "坐彈接轉體180度至腹落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-003", "TR-HSP-006"], "regression": "教練保護帶輔助", "required_qualities": "坐姿轉腹落的核心控制與落地保護", "common_faults": "轉體不足、腹落時腰部過度後仰", "teaching_cues": "「轉身同時身體打直」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "15-22", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-010": {"node_id": "TR-HSP-010", "name": "坐彈接轉體360度至臀落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-007"], "regression": "分段練習(180度x2)", "required_qualities": "更高轉體速度與坐姿收髖同步", "common_faults": "轉體不足360度、落地方向偏移", "teaching_cues": "「加快轉體速度」", "risk_level": "高", "mastery_criteria": "連續3次轉滿360度且穩定完成", "student_level": "進階", "est_sessions": "18-25", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-011": {"node_id": "TR-HSP-011", "name": "坐彈接腹落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-BAS-007", "TR-HSP-003"], "regression": "教練扶助", "required_qualities": "坐姿轉腹落姿勢轉換的核心控制", "common_faults": "轉換時機過早或過晚、腹落腰部過度後仰", "teaching_cues": "「坐下彈起後身體打直趴下」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "中階", "est_sessions": "10-15", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-012": {"node_id": "TR-HSP-012", "name": "腹彈接臀落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-003", "TR-BAS-007"], "regression": "教練扶助", "required_qualities": "腹落彈起後轉換坐姿的核心控制", "common_faults": "腹落彈起高度不足、坐下時重心不穩", "teaching_cues": "「腹落彈起後馬上收腿坐下」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成並回到站姿", "student_level": "中階", "est_sessions": "10-15", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-013": {"node_id": "TR-HSP-013", "name": "腹彈接背落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-003", "TR-HSP-004"], "regression": "教練保護帶輔助", "required_qualities": "腹落轉背落的空間翻轉定向(前後翻轉180度)", "common_faults": "翻轉方向混淆、背部落地角度不正確", "teaching_cues": "「腹落彈起後往後翻半圈」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "15-22", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-014": {"node_id": "TR-HSP-014", "name": "腹彈接轉體180度至腹落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-003"], "regression": null, "required_qualities": "腹落彈起後轉體控制", "common_faults": "轉體不足180度、落地方向偏移", "teaching_cues": "「彈起同時轉身」", "risk_level": "高", "mastery_criteria": "連續3次轉滿180度且穩定完成", "student_level": "進階", "est_sessions": "15-20", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-015": {"node_id": "TR-HSP-015", "name": "背彈接腹落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-004", "TR-HSP-003"], "regression": "教練保護帶輔助", "required_qualities": "背落轉腹落的翻轉方向控制(前翻180度)", "common_faults": "翻轉方向混淆、落地角度不正確", "teaching_cues": "「背落彈起後往前翻半圈」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "15-22", "discipline": "大彈翻床", "unlocks": ["TR-HSP-019"]}, "TR-HSP-016": {"node_id": "TR-HSP-016", "name": "背彈接背落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-004"], "regression": null, "required_qualities": "連續背落的彈起高度與核心控制", "common_faults": "第二次背落重心偏移、下巴未收好", "teaching_cues": "「背落彈起後再次收下巴」", "risk_level": "中", "mastery_criteria": "連續3次穩定完成", "student_level": "中階", "est_sessions": "12-18", "discipline": "大彈翻床", "unlocks": ["TR-HSP-018"]}, "TR-HSP-017": {"node_id": "TR-HSP-017", "name": "背彈接轉體180度至足落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-004"], "regression": "教練保護帶輔助", "required_qualities": "背落彈起後轉體回站姿的控制", "common_faults": "轉體不足180度、站立時重心不穩", "teaching_cues": "「背落彈起同時轉身站起」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成並站穩", "student_level": "進階", "est_sessions": "15-20", "discipline": "大彈翻床", "unlocks": ["TR-HSP-018"]}, "TR-HSP-018": {"node_id": "TR-HSP-018", "name": "背彈接轉體180度至背落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-016", "TR-HSP-017"], "regression": "教練保護帶輔助", "required_qualities": "背落彈起轉體後再次背落的控制(關鍵轉體基礎)", "common_faults": "轉體不足180度、第二次背落角度不正確", "teaching_cues": "「轉滿180度再放低身體」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "18-25", "discipline": "大彈翻床", "unlocks": ["TR-HSP-019", "TR-HSP-020"]}, "TR-HSP-019": {"node_id": "TR-HSP-019", "name": "背彈接轉體180度至腹落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-015", "TR-HSP-018"], "regression": "教練保護帶輔助", "required_qualities": "背落轉180度至腹落的空間定向(半轉體+俯臥銜接)", "common_faults": "轉體不足、腹落時機過早或過晚", "teaching_cues": "「轉滿180度再打直身體趴下」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "18-25", "discipline": "大彈翻床", "unlocks": []}, "TR-HSP-020": {"node_id": "TR-HSP-020", "name": "背彈接轉體360度至背落", "tier": "動作連接", "family": "姿勢跳進階", "prerequisites": ["TR-HSP-018"], "regression": "分段練習(180度x2)", "required_qualities": "極高轉體速度與空中定向", "common_faults": "轉體不足360度、落地角度偏轉", "teaching_cues": "「加快轉體速度」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "20-28", "discipline": "大彈翻床", "unlocks": []}, "TR-SLT-001": {"node_id": "TR-SLT-001", "name": "手膝彈接前空3/4至臀落", "tier": "動作連接", "family": "前空翻", "prerequisites": ["TR-HSP-002", "GEN-AIR-001"], "regression": "教練保護帶+降低彈跳高度", "required_qualities": "抱膝速度、翻轉方向感", "common_faults": "早開身體看地", "teaching_cues": "「跳起馬上抱緊」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "中階", "est_sessions": "15-25", "discipline": "大彈翻床", "unlocks": ["TR-SLT-002"]}, "TR-SLT-002": {"node_id": "TR-SLT-002", "name": "前空3/4至背落", "tier": "動作連接", "family": "前空翻", "prerequisites": ["TR-SLT-001"], "regression": "教練保護帶輔助", "required_qualities": "抱膝翻轉3/4圈後背部落地控制", "common_faults": "翻轉不足3/4圈、背部落地角度不正確", "teaching_cues": "「跳起馬上抱緊，背部先著地」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "大彈翻床", "unlocks": ["TR-SLT-003"]}, "TR-SLT-003": {"node_id": "TR-SLT-003", "name": "前空翻至臀落", "tier": "動作連接", "family": "前空翻", "prerequisites": ["TR-SLT-002"], "regression": "教練保護帶輔助", "required_qualities": "完整前空翻抱膝控制、坐姿落地緩衝", "common_faults": "翻轉不足一圈、落地重心不穩", "teaching_cues": "「抱越緊轉越快，落地找中心」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": ["TR-SLT-004", "TR-SLT-005"]}, "TR-SLT-004": {"node_id": "TR-SLT-004", "name": "背彈接前空翻至背落", "tier": "動作連接", "family": "前空翻", "prerequisites": ["TR-SLT-003", "TR-HSP-004"], "regression": "教練保護帶輔助", "required_qualities": "由背落彈起銜接前空翻的空間定向轉換", "common_faults": "起跳方向錯誤、翻轉方向與身體姿勢不同步", "teaching_cues": "「背落彈起後馬上找前空翻的方向」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": []}, "TR-SLT-005": {"node_id": "TR-SLT-005", "name": "團身前空翻", "tier": "空翻", "family": "前空翻", "prerequisites": ["TR-SLT-003"], "regression": "回到輔助練習", "required_qualities": "獨立翻轉與落地控制", "common_faults": "落地偏離床面中心", "teaching_cues": "「落地找中心點」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地在中心", "student_level": "進階", "est_sessions": "20-35", "discipline": "大彈翻床", "unlocks": ["TR-SHP-001", "TR-TWS-001", "TR-DBL-004", "TR-DBL-007"]}, "TR-SLT-006": {"node_id": "TR-SLT-006", "name": "背彈接後空3/4至足落", "tier": "動作連接", "family": "後空翻", "prerequisites": ["TR-HSP-004", "GEN-AIR-001"], "regression": "教練保護帶+降低彈跳高度", "required_qualities": "向上爆發力、抱膝速度、3/4翻轉後站姿落地控制", "common_faults": "翻轉不足3/4圈、落地重心不穩前傾", "teaching_cues": "「往上跳不是往後跳」「快速抱緊」", "risk_level": "高", "mastery_criteria": "輔助下能穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "大彈翻床", "unlocks": ["TR-SLT-007"]}, "TR-SLT-007": {"node_id": "TR-SLT-007", "name": "後空3/4至腹落", "tier": "動作連接", "family": "後空翻", "prerequisites": ["TR-SLT-006", "TR-HSP-003"], "regression": "教練保護帶+降低彈跳高度", "required_qualities": "向上爆發力、抱膝速度", "common_faults": "翻轉不完全", "teaching_cues": "「往上跳不是往後跳」", "risk_level": "高", "mastery_criteria": "輔助下穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "大彈翻床", "unlocks": ["TR-SLT-008"]}, "TR-SLT-008": {"node_id": "TR-SLT-008", "name": "團身後空翻", "tier": "空翻", "family": "後空翻", "prerequisites": ["TR-SLT-007"], "regression": "回到輔助練習", "required_qualities": "獨立翻轉與落地控制", "common_faults": "落地偏離床面中心", "teaching_cues": "「落地找中心點」", "risk_level": "高", "mastery_criteria": "連續5次獨立完成穩定落地在中心", "student_level": "進階", "est_sessions": "22-35", "discipline": "大彈翻床", "unlocks": ["TR-SHP-003", "TR-TWS-005", "TR-DBL-001", "TR-DBL-003"]}, "TR-SHP-001": {"node_id": "TR-SHP-001", "name": "屈體前空翻", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["TR-SLT-005"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體角度不足", "teaching_cues": "「手摸腳尖」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定在中心", "student_level": "進階", "est_sessions": "18-28", "discipline": "大彈翻床", "unlocks": ["TR-SHP-002", "TR-DBL-004", "TR-DBL-007"]}, "TR-SHP-002": {"node_id": "TR-SHP-002", "name": "直體前空翻", "tier": "空翻體勢變化", "family": "前空翻體勢", "prerequisites": ["TR-SHP-001"], "regression": null, "required_qualities": "翻轉速度控制、身體張力", "common_faults": "提早彎曲變成屈體", "teaching_cues": "「全程身體打直」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定在中心", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": []}, "TR-SHP-003": {"node_id": "TR-SHP-003", "name": "屈體後空翻", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["TR-SLT-008"], "regression": null, "required_qualities": "腿後側柔軟度、核心收折速度", "common_faults": "屈體不足變半團身", "teaching_cues": "「屁股帶動腿往上摺」", "risk_level": "高", "mastery_criteria": "空中明顯屈體角度且落地穩定在中心", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": ["TR-SHP-004", "TR-DBL-001", "TR-DBL-003"]}, "TR-SHP-004": {"node_id": "TR-SHP-004", "name": "直體後空翻", "tier": "空翻體勢變化", "family": "後空翻體勢", "prerequisites": ["TR-SHP-003"], "regression": null, "required_qualities": "極高翻轉爆發力與身體張力", "common_faults": "翻轉不足", "teaching_cues": "「全程繃緊」", "risk_level": "高", "mastery_criteria": "全程直體且落地穩定在中心", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "大彈翻床", "unlocks": []}, "TR-TWS-001": {"node_id": "TR-TWS-001", "name": "前空翻轉體180度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["TR-SLT-005"], "regression": null, "required_qualities": "轉體與翻轉節奏同步", "common_faults": "落地方向偏移", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內且維持在床面中心", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": ["TR-TWS-002"]}, "TR-TWS-002": {"node_id": "TR-TWS-002", "name": "前空翻轉體360度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["TR-TWS-001"], "regression": null, "required_qualities": "轉體與翻轉節奏同步", "common_faults": "轉體不足360度、落地方向偏移", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內且維持在床面中心", "student_level": "進階", "est_sessions": "22-32", "discipline": "大彈翻床", "unlocks": ["TR-TWS-003"]}, "TR-TWS-003": {"node_id": "TR-TWS-003", "name": "前空翻轉體540度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["TR-TWS-002"], "regression": null, "required_qualities": "極高轉體速度與翻轉節奏同步", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "28-40", "discipline": "大彈翻床", "unlocks": ["TR-TWS-004"]}, "TR-TWS-004": {"node_id": "TR-TWS-004", "name": "前空翻轉體720度", "tier": "空翻轉體", "family": "前空翻轉體", "prerequisites": ["TR-TWS-003"], "regression": null, "required_qualities": "極致轉體速度與身體控制", "common_faults": "轉速嚴重不足、落地方向大幅偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-45", "discipline": "大彈翻床", "unlocks": []}, "TR-TWS-005": {"node_id": "TR-TWS-005", "name": "後空翻轉體180度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["TR-SLT-008"], "regression": null, "required_qualities": "軸向轉體控制、單側視覺定向", "common_faults": "轉體時機過早導致翻轉不完全", "teaching_cues": "「翻到一半再轉」", "risk_level": "高", "mastery_criteria": "連續3次穩定完成", "student_level": "進階", "est_sessions": "18-28", "discipline": "大彈翻床", "unlocks": ["TR-TWS-006"]}, "TR-TWS-006": {"node_id": "TR-TWS-006", "name": "後空翻轉體360度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["TR-TWS-005"], "regression": null, "required_qualities": "轉體速度與翻轉節奏同步", "common_faults": "轉體不完整落地歪斜", "teaching_cues": "「轉體要快、翻轉要穩」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": ["TR-TWS-007"]}, "TR-TWS-007": {"node_id": "TR-TWS-007", "name": "後空翻轉體540度", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["TR-TWS-006"], "regression": null, "required_qualities": "前翻軸向轉體控制", "common_faults": "轉體方向與翻轉方向混淆", "teaching_cues": "「先確定轉的方向」", "risk_level": "高", "mastery_criteria": "落地方向誤差在合理範圍內", "student_level": "進階", "est_sessions": "20-30", "discipline": "大彈翻床", "unlocks": ["TR-TWS-008"]}, "TR-TWS-008": {"node_id": "TR-TWS-008", "name": "後空翻轉體720", "tier": "空翻轉體", "family": "後空翻轉體", "prerequisites": ["TR-TWS-007"], "regression": null, "required_qualities": "極高轉體速度與身體控制", "common_faults": "轉速不足、落地嚴重偏轉", "teaching_cues": "「加快手臂收緊轉體」", "risk_level": "高", "mastery_criteria": "穩定完成且落地誤差小", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-45", "discipline": "大彈翻床", "unlocks": []}, "TR-DBL-001": {"node_id": "TR-DBL-001", "name": "後空翻1 1/4至背落", "tier": "動作連接", "family": "後空翻周數", "prerequisites": ["TR-SLT-008", "TR-SHP-003"], "regression": "安全網/坑池輔助", "required_qualities": "高彈跳高度、抱膝收折速度、超過一圈後的背部落地控制", "common_faults": "翻轉不足1又1/4圈、背部落地角度不正確", "teaching_cues": "「抱越緊轉越快，背部先著地」", "risk_level": "高", "mastery_criteria": "在安全網/坑池輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "大彈翻床", "unlocks": ["TR-DBL-002"]}, "TR-DBL-002": {"node_id": "TR-DBL-002", "name": "腹彈接後空翻1 1/4至足落", "tier": "動作連接", "family": "後空翻周數", "prerequisites": ["TR-DBL-001"], "regression": "安全網/坑池輔助", "required_qualities": "由腹落銜接超過一圈後空翻回站姿的控制", "common_faults": "起跳方向錯誤、翻轉不足1又1/4圈", "teaching_cues": "「腹落彈起後找後空翻方向，抱緊轉快」", "risk_level": "高", "mastery_criteria": "在安全網/坑池輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "大彈翻床", "unlocks": []}, "TR-DBL-003": {"node_id": "TR-DBL-003", "name": "團身後空翻兩周", "tier": "空翻周數變化", "family": "後空翻周數", "prerequisites": ["TR-SLT-008", "TR-SHP-003"], "regression": "安全網/坑池輔助", "required_qualities": "極高彈跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "輔助環境下穩定完成", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "大彈翻床", "unlocks": []}, "TR-DBL-004": {"node_id": "TR-DBL-004", "name": "前空翻1 1/4至腹落", "tier": "動作連接", "family": "前空翻周數", "prerequisites": ["TR-SLT-005", "TR-SHP-001"], "regression": "安全網/坑池輔助", "required_qualities": "高彈跳高度、抱膝收折速度、超過一圈後的腹部落地控制", "common_faults": "翻轉不足1又1/4圈、腹落時機過早或過晚", "teaching_cues": "「抱越緊轉越快，打直身體趴下」", "risk_level": "高", "mastery_criteria": "在安全網/坑池輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "大彈翻床", "unlocks": ["TR-DBL-005", "TR-DBL-006"]}, "TR-DBL-005": {"node_id": "TR-DBL-005", "name": "腹彈接前空翻3/4至足落(ZACH)", "tier": "動作連接", "family": "前空翻周數", "prerequisites": ["TR-DBL-004"], "regression": "安全網/坑池輔助", "required_qualities": "由腹落銜接前空翻3/4圈回站姿的控制", "common_faults": "起跳方向錯誤、翻轉不足3/4圈", "teaching_cues": "「腹落彈起後馬上找前空翻方向」", "risk_level": "高", "mastery_criteria": "在安全網/坑池輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "25-40", "discipline": "大彈翻床", "unlocks": []}, "TR-DBL-006": {"node_id": "TR-DBL-006", "name": "前空翻1 3/4至背落", "tier": "動作連接", "family": "前空翻周數", "prerequisites": ["TR-DBL-004"], "regression": "安全網/坑池輔助", "required_qualities": "超過一圈後轉換至背部落地的控制", "common_faults": "翻轉不足1又3/4圈、背部落地角度不正確", "teaching_cues": "「抱越緊轉越快，背部先著地」", "risk_level": "高", "mastery_criteria": "在安全網/坑池輔助下動作型態正確即可，暫不要求連續次數", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "28-42", "discipline": "大彈翻床", "unlocks": []}, "TR-DBL-007": {"node_id": "TR-DBL-007", "name": "團身前空翻兩周", "tier": "空翻周數變化", "family": "前空翻周數", "prerequisites": ["TR-SLT-005", "TR-SHP-001"], "regression": "安全網/坑池輔助", "required_qualities": "極高彈跳高度與抱膝收折速度", "common_faults": "翻轉不足提早打開", "teaching_cues": "「抱越緊轉越快」", "risk_level": "高", "mastery_criteria": "輔助環境下穩定完成", "student_level": "選手(非目前學生群主要範圍)", "est_sessions": "30-50", "discipline": "大彈翻床", "unlocks": []}}}
+</script>
+
+<script>
+const RAW = JSON.parse(document.getElementById('skillmap-data').textContent);
+const NODES = RAW.nodes;
+const DISCIPLINES = RAW.disciplines;
+
+const TIER_PRIORITY = {
+  '基礎':0, '直立':1, '臀落':2, '膝落':3, '手膝落':4, '腹落':5, '背落':6,
+  '滾翻':7, '手翻':8, '動作連接':9,
+  '空翻':10, '空翻體勢變化':11, '空翻轉體':12, '空翻周數變化':13
+};
+const TIER_CLASS = {
+  '基礎':'base', '直立':'base', '臀落':'pos', '膝落':'pos', '手膝落':'pos',
+  '腹落':'pos', '背落':'pos', '滾翻':'roll', '手翻':'hsp', '動作連接':'conn',
+  '空翻':'slt', '空翻體勢變化':'shp', '空翻轉體':'tws', '空翻周數變化':'dbl'
+};
+const LEVEL_ORDER = ['入門','中階','進階','選手(非目前學生群主要範圍)'];
+
+let state = {
+  discipline: DISCIPLINES.includes('地板') ? '地板' : DISCIPLINES[0],
+  levels: new Set(LEVEL_ORDER),
+  search: '',
+  selected: null
+};
+
+function getNode(id){ return NODES[id]; }
+
+function tierColorVars(tier){
+  const cls = TIER_CLASS[tier] || 'base';
+  return { fg: `var(--t-${cls})`, bg: `var(--t-${cls}-bg)` };
+}
+
+function nodeMatchesSearch(n, q){
+  if(!q) return true;
+  const s = q.toLowerCase();
+  return n.name.toLowerCase().includes(s) || n.node_id.toLowerCase().includes(s);
+}
+
+function renderTabs(){
+  const el = document.getElementById('tabs');
+  el.innerHTML = '';
+  DISCIPLINES.forEach(d=>{
+    const b = document.createElement('button');
+    b.className = 'tab' + (d===state.discipline ? ' active' : '');
+    b.textContent = d;
+    b.addEventListener('click', ()=>{ state.discipline = d; renderBoard(); renderTabs(); });
+    el.appendChild(b);
+  });
+}
+
+function renderLevelChips(){
+  const el = document.getElementById('levelChips');
+  el.innerHTML = '';
+  const present = LEVEL_ORDER.filter(lv => Object.values(NODES).some(n=>n.student_level===lv));
+  present.forEach(lv=>{
+    const b = document.createElement('button');
+    b.className = 'level-chip' + (state.levels.has(lv) ? ' active' : '');
+    b.textContent = lv.replace('(非目前學生群主要範圍)','·選手');
+    b.addEventListener('click', ()=>{
+      if(state.levels.has(lv)) state.levels.delete(lv); else state.levels.add(lv);
+      renderLevelChips(); renderBoard();
+    });
+    el.appendChild(b);
+  });
+}
+
+function findFirstMatch(q){
+  if(!q) return null;
+  // 先找目前分頁內符合的
+  const inCurrent = Object.values(NODES).find(n=> n.discipline===state.discipline && nodeMatchesSearch(n,q));
+  if(inCurrent) return inCurrent;
+  for(const d of DISCIPLINES){
+    const hit = Object.values(NODES).find(n=> n.discipline===d && nodeMatchesSearch(n,q));
+    if(hit) return hit;
+  }
+  return null;
+}
+
+function renderBoard(){
+  const board = document.getElementById('board');
+  board.innerHTML = '';
+  const nodesInTab = Object.values(NODES).filter(n=>n.discipline===state.discipline);
+  const tiers = [...new Set(nodesInTab.map(n=>n.tier))].sort((a,b)=>(TIER_PRIORITY[a]??99)-(TIER_PRIORITY[b]??99));
+
+  const selectedNode = state.selected ? getNode(state.selected) : null;
+  const prereqSet = selectedNode ? new Set(selectedNode.prerequisites) : new Set();
+  const unlockSet = selectedNode ? new Set(selectedNode.unlocks) : new Set();
+
+  tiers.forEach(tier=>{
+    const col = document.createElement('div');
+    col.className = 'col';
+    const colors = tierColorVars(tier);
+    const head = document.createElement('div');
+    head.className = 'col-head';
+    head.style.background = colors.bg;
+    head.style.color = colors.fg;
+    head.textContent = tier;
+    col.appendChild(head);
+
+    const nodesInTier = nodesInTab.filter(n=>n.tier===tier);
+    const families = [...new Set(nodesInTier.map(n=>n.family || ''))];
+    families.forEach(fam=>{
+      if(fam){
+        const fl = document.createElement('div');
+        fl.className = 'fam-label';
+        fl.textContent = fam;
+        col.appendChild(fl);
+      }
+      nodesInTier.filter(n=>(n.family||'')===fam).forEach(n=>{
+        const card = document.createElement('div');
+        let cls = 'card';
+        const visible = nodeMatchesSearch(n, state.search) && state.levels.has(n.student_level);
+        if(!visible) cls += ' dim';
+        if(state.selected===n.node_id) cls += ' selected';
+        else if(prereqSet.has(n.node_id)) cls += ' prereq-hl';
+        else if(unlockSet.has(n.node_id)) cls += ' unlock-hl';
+        card.className = cls;
+        card.dataset.id = n.node_id;
+        card.style.borderLeftColor = colors.fg;
+        card.innerHTML = `
+          <div class="card-name">${n.name}</div>
+          <div class="card-meta">
+            <span class="risk-label risk-${n.risk_level||'低'}">風險${n.risk_level||'-'}</span>
+            <span class="card-id mono">${n.node_id}</span>
+          </div>`;
+        card.addEventListener('click', ()=> selectNode(n.node_id));
+        col.appendChild(card);
+      });
+    });
+    if(nodesInTier.length===0){
+      const e = document.createElement('div');
+      e.className = 'empty-col';
+      e.textContent = '（無節點）';
+      col.appendChild(e);
+    }
+    board.appendChild(col);
+  });
+}
+
+function chipRow(ids, emptyText){
+  if(!ids || ids.length===0) return `<div class="p-empty">${emptyText}</div>`;
+  return '<div class="chip-row">' + ids.map(id=>{
+    const n = getNode(id);
+    const label = n ? `${n.name}` : id;
+    return `<button class="chip" data-jump="${id}">${label}</button>`;
+  }).join('') + '</div>';
+}
+
+function renderPanel(n){
+  const colors = tierColorVars(n.tier);
+  const body = document.getElementById('panelBody');
+  body.innerHTML = `
+    <div class="panel-top" style="background:${colors.fg}">
+      <span class="p-tier-badge">${n.tier}${n.family ? '　'+n.family : ''}</span>
+      <h2 class="p-name">${n.name}</h2>
+      <div class="p-id mono">${n.node_id}　${n.discipline}</div>
+    </div>
+
+    <div class="p-section">
+      <div class="p-label">先備動作</div>
+      ${chipRow(n.prerequisites, '無（起始節點）')}
+    </div>
+
+    <div class="p-section">
+      <div class="p-label">解鎖以下動作</div>
+      ${chipRow(n.unlocks, '目前無下游節點')}
+    </div>
+
+    <div class="p-section p-grid">
+      <div><div class="p-label">風險係數</div><div class="p-value">${n.risk_level||'-'}</div></div>
+      <div><div class="p-label">適用學生程度</div><div class="p-value">${(n.student_level||'-').replace('(非目前學生群主要範圍)','（選手）')}</div></div>
+      <div><div class="p-label">預估訓練次數</div><div class="p-value">${n.est_sessions||'-'}</div></div>
+      <div><div class="p-label">退階/輔助動作</div><div class="p-value">${n.regression||'無'}</div></div>
+    </div>
+
+    <div class="p-section">
+      <div class="p-label">所需素質</div>
+      <div class="p-value">${n.required_qualities||'-'}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">常見錯誤/代償</div>
+      <div class="p-value">${n.common_faults||'-'}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">教學要領/口令</div>
+      <div class="p-cue">${n.teaching_cues||'-'}</div>
+    </div>
+    <div class="p-section">
+      <div class="p-label">掌握標準</div>
+      <div class="p-value">${n.mastery_criteria||'-'}</div>
+    </div>
+  `;
+  body.querySelectorAll('[data-jump]').forEach(el=>{
+    el.addEventListener('click', ()=> selectNode(el.dataset.jump));
+  });
+}
+
+function openPanel(){
+  document.getElementById('panel').classList.add('open');
+  document.getElementById('overlay').classList.add('show');
+}
+function closePanel(){
+  document.getElementById('panel').classList.remove('open');
+  document.getElementById('overlay').classList.remove('show');
+  state.selected = null;
+  renderBoard();
+}
+
+function selectNode(id){
+  const n = getNode(id);
+  if(!n) return;
+  if(n.discipline !== state.discipline){
+    state.discipline = n.discipline;
+    renderTabs();
+  }
+  state.selected = id;
+  renderBoard();
+  renderPanel(n);
+  openPanel();
+  requestAnimationFrame(()=>{
+    const el = document.querySelector(`.card[data-id="${id}"]`);
+    if(el) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+  });
+}
+
+document.getElementById('overlay').addEventListener('click', closePanel);
+document.querySelector('.panel-close').addEventListener('click', closePanel);
+
+const TIER_LEGEND = [
+  ['基礎 / 直立', '--t-base'],
+  ['姿勢基礎(臀落/膝落/手膝落/腹落/背落)', '--t-pos'],
+  ['滾翻', '--t-roll'],
+  ['手翻', '--t-hsp'],
+  ['動作連接', '--t-conn'],
+  ['空翻', '--t-slt'],
+  ['空翻體勢變化', '--t-shp'],
+  ['空翻轉體', '--t-tws'],
+  ['空翻周數變化', '--t-dbl'],
+];
+function renderTierLegend(){
+  const el = document.getElementById('tierLegend');
+  el.innerHTML = TIER_LEGEND.map(([label, varName])=>
+    `<span class="tier-swatch"><i style="background:var(${varName})"></i>${label}</span>`
+  ).join('');
+}
+function openHelp(){
+  document.getElementById('helpOverlay').classList.add('show');
+}
+function closeHelp(){
+  document.getElementById('helpOverlay').classList.remove('show');
+}
+document.getElementById('helpBtn').addEventListener('click', openHelp);
+document.getElementById('helpClose').addEventListener('click', closeHelp);
+document.getElementById('helpOverlay').addEventListener('click', e=>{
+  if(e.target.id === 'helpOverlay') closeHelp();
+});
+renderTierLegend();
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape'){ closePanel(); closeHelp(); }
+});
+
+/* ---------------- 規劃課表 ---------------- */
+const STUDENTS_KEY = 'skillmap_students_v1';
+function loadStudents(){
+  try{ return JSON.parse(localStorage.getItem(STUDENTS_KEY)) || {}; }catch(e){ return {}; }
+}
+function saveStudents(obj){
+  try{ localStorage.setItem(STUDENTS_KEY, JSON.stringify(obj)); }catch(e){}
+}
+let planState = { student: null, goal: null, searchText: '', freq: 3, showWeekly: false };
+
+function getAncestors(nodeId){
+  const visited = new Set();
+  const stack = [nodeId];
+  while(stack.length){
+    const id = stack.pop();
+    const n = getNode(id);
+    if(!n) continue;
+    for(const p of n.prerequisites){
+      if(!visited.has(p)){ visited.add(p); stack.push(p); }
+    }
+  }
+  return visited;
+}
+function topoOrder(idSet){
+  const remaining = new Set(idSet);
+  const result = [];
+  let guard = remaining.size + 1;
+  while(remaining.size && guard-- > 0){
+    let progressed = false;
+    const candidates = [...remaining]
+      .filter(id => getNode(id).prerequisites.every(p => !remaining.has(p)))
+      .sort((a,b)=>{
+        const pa = TIER_PRIORITY[getNode(a).tier] ?? 99;
+        const pb = TIER_PRIORITY[getNode(b).tier] ?? 99;
+        if(pa !== pb) return pa - pb;
+        return getNode(a).name.localeCompare(getNode(b).name, 'zh-Hant');
+      });
+    for(const id of candidates){
+      result.push(id); remaining.delete(id); progressed = true;
+    }
+    if(!progressed) break;
+  }
+  for(const id of remaining) result.push(id);
+  return result;
+}
+
+function parseSessionsMid(str){
+  if(!str) return 5;
+  str = String(str).trim();
+  if(str.endsWith('+')){ const v = parseInt(str); return isNaN(v) ? 20 : v + 10; }
+  if(str.includes('-')){
+    const [a,b] = str.split('-').map(x=>parseInt(x));
+    if(!isNaN(a) && !isNaN(b)) return (a+b)/2;
+  }
+  const v = parseInt(str);
+  return isNaN(v) ? 5 : v;
+}
+
+function suggestVolume(n){
+  if(n.risk_level === '高') return '4–6 次（全程教練保護／確保安全，重動作品質不追次數）';
+  if(n.risk_level === '中') return '3–4 組 x 5–6 次';
+  return '3 組 x 8–10 次';
+}
+
+function itemDuration(n){
+  if(n.risk_level === '高') return 18;
+  if(n.risk_level === '中') return 12;
+  return 7;
+}
+
+function buildTodaySession(ordered, masteredSet, budgetMin){
+  const budget = budgetMin || 60;
+  const chosen = [];
+  const chosenSet = new Set();
+  let used = 0, highRiskUsed = false;
+  for(const id of ordered){
+    const n = getNode(id);
+    const ready = n.prerequisites.every(p => masteredSet.has(p) || chosenSet.has(p));
+    if(!ready) continue;
+    if(n.risk_level === '高'){
+      if(highRiskUsed) continue;
+      highRiskUsed = true;
+    }
+    const dur = itemDuration(n);
+    if(chosen.length > 0 && used + dur > budget) continue;
+    chosen.push(id); chosenSet.add(id); used += dur;
+    if(used >= budget) break;
+  }
+  return { chosen, used };
+}
+
+function buildPeriodizedSessions(ordered, masteredSet, factorFn, maxSessions){
+  factorFn = factorFn || (()=>1);
+  maxSessions = maxSessions || Infinity;
+  const totalNeeded = {}, done = {};
+  ordered.forEach(id=>{
+    const n = getNode(id);
+    totalNeeded[id] = Math.max(1, Math.round(parseSessionsMid(n.est_sessions) * factorFn(id)));
+    done[id] = 0;
+  });
+  const completedSet = new Set();
+  const sessions = [];
+  const guardMax = ordered.reduce((s,id)=>s+totalNeeded[id],0) + 50;
+  let guard = 0;
+  while(ordered.some(id=>!completedSet.has(id)) && guard++ < guardMax){
+    if(sessions.length >= maxSessions) break;
+    let budgetUsed = 0, highRiskUsed = false;
+    const reps = {}; // id -> {count, dur}
+    let addedSomething = true;
+    while(budgetUsed < 60 && addedSomething){
+      addedSomething = false;
+      for(const id of ordered){
+        if(completedSet.has(id)) continue;
+        const n = getNode(id);
+        const ready = n.prerequisites.every(p => masteredSet.has(p) || completedSet.has(p));
+        if(!ready) continue;
+        const isNewHighRisk = n.risk_level === '高' && !reps[id];
+        if(isNewHighRisk && highRiskUsed) continue;
+        const dur = itemDuration(n);
+        if(budgetUsed + dur > 60) continue;
+        if(!reps[id]) reps[id] = { count: 0, dur };
+        reps[id].count++;
+        budgetUsed += dur;
+        if(n.risk_level === '高') highRiskUsed = true;
+        done[id]++;
+        if(done[id] >= totalNeeded[id]) completedSet.add(id);
+        addedSomething = true;
+        if(budgetUsed >= 60) break;
+      }
+    }
+    const items = Object.keys(reps).map(id => ({ id, count: reps[id].count, dur: reps[id].dur * reps[id].count }));
+    if(items.length === 0) break;
+    sessions.push({ items, usedMin: budgetUsed });
+  }
+  return { sessions, completedSet };
+}
+
+function switchMode(mode){
+  document.getElementById('modeMapBtn').classList.toggle('active', mode==='map');
+  document.getElementById('modePlanBtn').classList.toggle('active', mode==='plan');
+  document.getElementById('mapControls').style.display = mode==='map' ? 'flex' : 'none';
+  document.getElementById('tabs').style.display = mode==='map' ? 'flex' : 'none';
+  document.getElementById('board').style.display = mode==='map' ? 'flex' : 'none';
+  document.getElementById('plannerView').style.display = mode==='plan' ? 'block' : 'none';
+  if(mode==='plan') renderPlanner();
+}
+document.getElementById('modeMapBtn').addEventListener('click', ()=>switchMode('map'));
+document.getElementById('modePlanBtn').addEventListener('click', ()=>switchMode('plan'));
+
+function renderPlanner(){
+  const el = document.getElementById('plannerView');
+  const students = loadStudents();
+  const names = Object.keys(students);
+  if(planState.student && !students[planState.student]) planState.student = null;
+
+  let html = `<div class="plan-card">
+    <div class="plan-label">學生</div>
+    <div class="plan-row">
+      <select id="studentSelect"><option value="">請選擇學生…</option>${names.map(n=>`<option value="${n}" ${n===planState.student?'selected':''}>${n}</option>`).join('')}</select>
+      <input type="text" id="newStudentInput" placeholder="輸入新學生姓名">
+      <button class="plan-btn ghost" id="addStudentBtn">新增學生</button>
+      ${planState.student ? '<button class="plan-btn danger" id="delStudentBtn">刪除此學生</button>' : ''}
+    </div>
+  </div>`;
+
+  if(!planState.student){
+    el.innerHTML = html + `<div class="plan-empty">先選擇或新增一位學生，才能開始規劃課表</div>`;
+    wirePlannerTop();
+    return;
+  }
+
+  const masteredArr = students[planState.student] || [];
+  const masteredSet = new Set(masteredArr);
+  const goal = planState.goal ? getNode(planState.goal) : null;
+
+  html += `<div class="plan-card">
+    <div class="plan-label">目標動作</div>
+    <div class="goal-search-wrap">
+      <input type="text" id="goalSearchInput" placeholder="搜尋想學會的動作…" autocomplete="off" value="${planState.searchText||''}">
+      <div class="suggest-list" id="goalSuggest" style="display:none;"></div>
+    </div>`;
+  if(goal){
+    const colors = tierColorVars(goal.tier);
+    html += `<div class="goal-chosen"><span class="dot" style="background:${colors.fg}"></span>
+      <div><div style="font-weight:600;font-size:13.5px;">${goal.name}</div>
+      <div style="font-size:11px;color:var(--ink-3)">${goal.discipline} · ${goal.tier} · ${goal.node_id}</div></div></div>`;
+  }
+  html += `</div>`;
+
+  if(goal){
+    const ancestors = [...getAncestors(goal.node_id)];
+    const riskRank = {'低':0, '中':1, '高':2};
+    ancestors.sort((a,b)=>{
+      const na=getNode(a), nb=getNode(b);
+      const pa = TIER_PRIORITY[na.tier] ?? 99, pb = TIER_PRIORITY[nb.tier] ?? 99;
+      if(pa !== pb) return pa - pb;
+      const ra = riskRank[na.risk_level] ?? 1, rb = riskRank[nb.risk_level] ?? 1;
+      if(ra !== rb) return ra - rb;
+      return na.name.localeCompare(nb.name, 'zh-Hant');
+    });
+    const grouped = {};
+    ancestors.forEach(id=>{
+      const n = getNode(id);
+      const key = n.discipline + '｜' + n.tier;
+      (grouped[key] = grouped[key] || []).push(id);
+    });
+    if(masteredSet.has(goal.node_id)){
+      html += `<div class="plan-card"><div class="plan-empty">${planState.student} 已經會這個動作了！可以挑戰更高階的目標。</div></div>`;
+    } else {
+      html += `<div class="plan-card">
+        <div class="plan-label">已具備的先備動作（勾選學生已經會的）</div>
+        <div class="ancestor-list">`;
+      if(ancestors.length===0){
+        html += `<div class="anc-item" style="color:var(--ink-3)">這是起始節點，沒有先備動作</div>`;
+      }
+      Object.keys(grouped).forEach(key=>{
+        html += `<div class="anc-group-label">${key}</div>`;
+        grouped[key].forEach(id=>{
+          const n = getNode(id);
+          html += `<label class="anc-item">
+            <input type="checkbox" data-anc="${id}" ${masteredSet.has(id)?'checked':''}>
+            ${n.name} <span class="id mono">${id}</span>
+          </label>`;
+        });
+      });
+      html += `</div></div>`;
+
+      const remaining = ancestors.filter(id=>!masteredSet.has(id));
+      remaining.push(goal.node_id);
+      const stabilizing = ancestors.length > 0 && remaining.length === 1; // 先備全數勾選，只剩目標本身
+      const pool = stabilizing ? [...ancestors, goal.node_id] : remaining;
+      const ordered = topoOrder(new Set(pool));
+      const factorFn = id => stabilizing && id !== goal.node_id ? 0.3 : 1;
+      const hasElite = ordered.some(id=>{
+        const n = getNode(id);
+        return n.student_level && n.student_level.includes('選手');
+      });
+      let totalMin=0, totalMax=0;
+      ordered.forEach(id=>{
+        const est = (getNode(id).est_sessions||'0-0').split('-').map(x=>parseInt(x)||0);
+        const f = factorFn(id);
+        totalMin += Math.round((est[0]||0)*f); totalMax += Math.round((est[1]||est[0]||0)*f);
+      });
+      html += `<div class="plan-card">
+        <div class="plan-label">${stabilizing
+          ? `鞏固訓練順序（先備動作都已具備，用完整動作鏈維持穩定度，共 ${ordered.length} 個節點）`
+          : `建議訓練順序（依先備關係排序，共 ${ordered.length} 個節點）`}</div>`;
+      if(stabilizing){
+        html += `<div class="plan-warning" style="background:var(--surface-2);border-left-color:var(--mat);">先備動作都已經具備了，這裡把完整動作鏈都列出來安排「鞏固訓練」，先備動作以較低次數複習，重點還是放在目標動作本身的穩定度。</div>`;
+      }
+      if(hasElite){
+        html += `<div class="plan-warning">這條路徑包含「選手」等級的動作，超出目前學生群的主要範圍，規劃課表時可以評估是否要納入。</div>`;
+      }
+      ordered.forEach((id, i)=>{
+        const n = getNode(id);
+        const colors = tierColorVars(n.tier);
+        html += `<div class="plan-path-item" style="border-left-color:${colors.fg}" data-jumpnode="${id}">
+          <div class="plan-path-num">${i+1}</div>
+          <div><div class="plan-path-name">${n.name}</div>
+          <div style="font-size:11px;color:var(--ink-3)">${n.discipline} · ${n.tier}</div></div>
+          <div class="plan-path-meta">風險${n.risk_level||'-'}<br>${n.est_sessions||'-'} 次</div>
+        </div>`;
+      });
+      html += `<div class="plan-total">${stabilizing ? '預估鞏固訓練次數' : '預估總訓練次數'}：約 ${totalMin}–${totalMax} 次</div></div>`;
+
+      const { chosen: todayPicks, used: todayUsed } = buildTodaySession(ordered, masteredSet, 60);
+      html += `<div class="plan-card">
+        <div class="plan-label">今日建議課表（以60分鐘估算，共安排${todayPicks.length}項，約${todayUsed}分鐘）</div>`;
+      const warmupPicks = todayPicks.filter(id => (TIER_PRIORITY[getNode(id).tier] ?? 99) <= 1);
+      const mainPicks = todayPicks.filter(id => {
+        const risk = getNode(id).risk_level;
+        return (TIER_PRIORITY[getNode(id).tier] ?? 99) > 1 && (risk === '中' || risk === '高');
+      });
+      const supportPicks = todayPicks.filter(id => !warmupPicks.includes(id) && !mainPicks.includes(id));
+      let seq = 1;
+      const renderSessionRow = (id) => {
+        const n = getNode(id);
+        const colors = tierColorVars(n.tier);
+        return `<div class="plan-path-item" style="border-left-color:${colors.fg}" data-jumpnode="${id}">
+          <div class="plan-path-num">${seq++}</div>
+          <div style="flex:1">
+            <div class="plan-path-name">${n.name}</div>
+            <div style="font-size:11px;color:var(--ink-3);margin:2px 0 4px;">${suggestVolume(n)}　·　約${itemDuration(n)}分鐘</div>
+            <div style="font-size:11.5px;color:var(--ink);background:var(--surface-2);border-radius:6px;padding:5px 8px;">${n.teaching_cues || n.common_faults || '照平常節奏練習即可'}</div>
+          </div>
+          <div class="plan-path-meta">風險${n.risk_level||'-'}</div>
+        </div>`;
+      };
+      if(warmupPicks.length){
+        html += `<div class="anc-group-label">熱身／基礎活動（先讓身體活動開，不要直接進高強度動作）</div>`;
+        warmupPicks.forEach(id => html += renderSessionRow(id));
+      }
+      if(mainPicks.length){
+        html += `<div class="anc-group-label">主要技術練習（安排在體力與專注力最好的時段）</div>`;
+        mainPicks.forEach(id => html += renderSessionRow(id));
+      }
+      if(supportPicks.length){
+        html += `<div class="anc-group-label">輔助鞏固（強度較低，用來鞏固剛學會或即將學的動作）</div>`;
+        supportPicks.forEach(id => html += renderSessionRow(id));
+      }
+      if(!todayPicks.length){
+        html += `<div class="plan-empty">目前沒有可安排的節點</div>`;
+      } else {
+        html += `<div class="anc-group-label">收操</div>
+          <div class="plan-path-item" style="border-left-color:var(--border);">
+            <div style="flex:1;font-size:12.5px;color:var(--ink-2);padding:2px 0;">靜態伸展、放鬆呼吸，讓心率與身體逐漸恢復</div>
+          </div>`;
+      }
+      if(ordered.length > todayPicks.length){
+        html += `<div style="font-size:11.5px;color:var(--ink-3);margin-top:8px;">路徑上還有 ${ordered.length - todayPicks.length} 個動作沒排進今天，會留到下一次訓練繼續往下安排，不用一次塞完。</div>`;
+      }
+      html += `</div>`;
+
+      html += `<div class="plan-card">
+        <div class="plan-label">週期訓練規劃</div>
+        <div class="plan-row" style="margin-bottom:${planState.showWeekly ? '14px' : '0'}">
+          <span style="font-size:13px;color:var(--ink-2);">每週訓練</span>
+          <input type="number" id="freqInput" min="1" max="7" value="${planState.freq}" style="width:64px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13.5px;">
+          <span style="font-size:13px;color:var(--ink-2);">次</span>
+          <button class="plan-btn ghost" id="toggleWeeklyBtn">${planState.showWeekly ? '收合' : '產生12週課表'}</button>
+        </div>`;
+      if(planState.showWeekly){
+        const PLAN_WEEKS = 12;
+        const { sessions, completedSet: periodDone } = buildPeriodizedSessions(ordered, masteredSet, factorFn, PLAN_WEEKS * planState.freq);
+        html += `<div style="max-height:460px;overflow-y:auto;">`;
+        let lastWeek = 0;
+        sessions.forEach((sess, idx)=>{
+          const sessionNum = idx + 1;
+          const week = Math.ceil(sessionNum / planState.freq);
+          if(week !== lastWeek){
+            html += `<div class="anc-group-label">第 ${week} 週</div>`;
+            lastWeek = week;
+          }
+          const preview = sess.items.slice(0,3).map(it=>getNode(it.id).name).join('、') + (sess.items.length>3 ? ' 等' : '');
+          html += `<details class="session-drop">
+            <summary>第 ${sessionNum} 次訓練　·　${sess.items.length} 項　·　約 ${sess.usedMin} 分鐘　·　${preview}</summary>
+            <div class="session-drop-body">`;
+          const warm = sess.items.filter(it => (TIER_PRIORITY[getNode(it.id).tier] ?? 99) <= 1);
+          const main = sess.items.filter(it => {
+            const risk = getNode(it.id).risk_level;
+            return (TIER_PRIORITY[getNode(it.id).tier] ?? 99) > 1 && (risk === '中' || risk === '高');
+          });
+          const support = sess.items.filter(it => !warm.includes(it) && !main.includes(it));
+          const rowHtml = (it) => {
+            const n = getNode(it.id);
+            const colors = tierColorVars(n.tier);
+            const repTxt = it.count > 1 ? `（分${it.count}輪進行）` : '';
+            return `<div class="plan-path-item" style="border-left-color:${colors.fg};margin-bottom:4px;" data-jumpnode="${it.id}">
+              <div style="flex:1"><div class="plan-path-name">${n.name}${repTxt}</div>
+              <div style="font-size:11px;color:var(--ink-3)">${suggestVolume(n)}　·　約${it.dur}分鐘</div></div>
+              <div class="plan-path-meta">風險${n.risk_level||'-'}</div>
+            </div>`;
+          };
+          if(warm.length) html += `<div class="session-sub">熱身</div>` + warm.map(rowHtml).join('');
+          if(main.length) html += `<div class="session-sub">主要技術</div>` + main.map(rowHtml).join('');
+          if(support.length) html += `<div class="session-sub">輔助鞏固</div>` + support.map(rowHtml).join('');
+          html += `</div></details>`;
+        });
+        html += `</div>`;
+        const notDone = ordered.filter(id => !periodDone.has(id));
+        if(notDone.length > 0){
+          html += `<div class="plan-warning" style="margin-top:10px;">這是 12 週（3 個月）的訓練窗口，在這段時間內排得完 ${ordered.length - notDone.length}／${ordered.length} 個動作，還有 ${notDone.length} 個動作來不及排入。建議這 12 週結束後，重新勾選學生當時已具備的先備動作，再產生下一輪 12 週課表，滾動式往下規劃。</div>`;
+        } else {
+          html += `<div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;">在這 12 週的訓練窗口內可以完成全部 ${ordered.length} 個動作。</div>`;
+        }
+        html += `<div style="font-size:11.5px;color:var(--ink-3);margin-top:6px;line-height:1.6;">每次訓練都以60分鐘估算，並依當時已完成的先備進度自動安排內容；同一動作若當次時間有餘裕會多排幾輪鞏固，不會硬性只練一次就結束。共規劃 ${sessions.length} 次訓練。實際請依學生當天狀況、體力恢復彈性調整。</div>`;
+      }
+      html += `</div>`;
+    }
+  }
+
+  el.innerHTML = html;
+  wirePlannerTop();
+  wirePlannerGoal();
+}
+
+function wirePlannerTop(){
+  const sel = document.getElementById('studentSelect');
+  if(sel) sel.addEventListener('change', e=>{ planState.student = e.target.value || null; planState.goal=null; renderPlanner(); });
+  const addBtn = document.getElementById('addStudentBtn');
+  if(addBtn) addBtn.addEventListener('click', ()=>{
+    const input = document.getElementById('newStudentInput');
+    const name = input.value.trim();
+    if(!name) return;
+    const students = loadStudents();
+    if(!students[name]) students[name] = [];
+    saveStudents(students);
+    planState.student = name;
+    planState.goal = null;
+    renderPlanner();
+  });
+  const delBtn = document.getElementById('delStudentBtn');
+  if(delBtn) delBtn.addEventListener('click', ()=>{
+    if(!confirm(`確定要刪除學生「${planState.student}」的紀錄嗎？`)) return;
+    const students = loadStudents();
+    delete students[planState.student];
+    saveStudents(students);
+    planState.student = null; planState.goal = null;
+    renderPlanner();
+  });
+}
+
+function wirePlannerGoal(){
+  const input = document.getElementById('goalSearchInput');
+  const suggestBox = document.getElementById('goalSuggest');
+  if(!input) return;
+  input.addEventListener('input', e=>{
+    planState.searchText = e.target.value;
+    const q = e.target.value.trim().toLowerCase();
+    if(!q){ suggestBox.style.display='none'; return; }
+    const matches = Object.values(NODES).filter(n=>
+      n.name.toLowerCase().includes(q) || n.node_id.toLowerCase().includes(q)
+    ).slice(0,8);
+    if(matches.length===0){ suggestBox.style.display='none'; return; }
+    suggestBox.innerHTML = matches.map(n=>
+      `<div class="suggest-item" data-goalpick="${n.node_id}">${n.name}<span>${n.discipline}</span></div>`
+    ).join('');
+    suggestBox.style.display = 'block';
+    suggestBox.querySelectorAll('[data-goalpick]').forEach(elm=>{
+      elm.addEventListener('click', ()=>{
+        planState.goal = elm.dataset.goalpick;
+        planState.searchText = '';
+        renderPlanner();
+      });
+    });
+  });
+  document.querySelectorAll('[data-anc]').forEach(cb=>{
+    cb.addEventListener('change', ()=>{
+      const students = loadStudents();
+      const arr = new Set(students[planState.student]||[]);
+      if(cb.checked) arr.add(cb.dataset.anc); else arr.delete(cb.dataset.anc);
+      students[planState.student] = [...arr];
+      saveStudents(students);
+      renderPlanner();
+    });
+  });
+  document.querySelectorAll('[data-jumpnode]').forEach(row=>{
+    row.addEventListener('click', ()=> selectNode(row.dataset.jumpnode));
+  });
+  const freqInput = document.getElementById('freqInput');
+  if(freqInput) freqInput.addEventListener('change', e=>{
+    const v = parseInt(e.target.value);
+    planState.freq = (v && v > 0) ? v : 3;
+    renderPlanner();
+  });
+  const toggleBtn = document.getElementById('toggleWeeklyBtn');
+  if(toggleBtn) toggleBtn.addEventListener('click', ()=>{
+    planState.showWeekly = !planState.showWeekly;
+    renderPlanner();
+  });
+}
+
+document.getElementById('search').addEventListener('input', e=>{
+  state.search = e.target.value.trim();
+  const match = findFirstMatch(state.search);
+  if(match && match.discipline !== state.discipline){
+    state.discipline = match.discipline;
+    renderTabs();
+  }
+  renderBoard();
+  if(state.search && match){
+    requestAnimationFrame(()=>{
+      const el = document.querySelector(`.card[data-id="${match.node_id}"]`);
+      if(el) el.scrollIntoView({behavior:'smooth', block:'nearest', inline:'center'});
+    });
+  }
+});
+
+renderTabs();
+renderLevelChips();
+renderBoard();
+
+</script>
+</body>
+</html>
