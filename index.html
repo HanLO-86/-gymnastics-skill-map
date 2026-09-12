@@ -719,8 +719,9 @@ function buildTodaySession(ordered, masteredSet, budgetMin){
   return { chosen, used };
 }
 
-function buildPeriodizedSessions(ordered, masteredSet, factorFn){
+function buildPeriodizedSessions(ordered, masteredSet, factorFn, maxSessions){
   factorFn = factorFn || (()=>1);
+  maxSessions = maxSessions || Infinity;
   const totalNeeded = {}, done = {};
   ordered.forEach(id=>{
     const n = getNode(id);
@@ -732,6 +733,7 @@ function buildPeriodizedSessions(ordered, masteredSet, factorFn){
   const guardMax = ordered.reduce((s,id)=>s+totalNeeded[id],0) + 50;
   let guard = 0;
   while(ordered.some(id=>!completedSet.has(id)) && guard++ < guardMax){
+    if(sessions.length >= maxSessions) break;
     let budgetUsed = 0, highRiskUsed = false;
     const reps = {}; // id -> {count, dur}
     let addedSomething = true;
@@ -760,7 +762,7 @@ function buildPeriodizedSessions(ordered, masteredSet, factorFn){
     if(items.length === 0) break;
     sessions.push({ items, usedMin: budgetUsed });
   }
-  return sessions;
+  return { sessions, completedSet };
 }
 
 function switchMode(mode){
@@ -945,10 +947,11 @@ function renderPlanner(){
           <span style="font-size:13px;color:var(--ink-2);">每週訓練</span>
           <input type="number" id="freqInput" min="1" max="7" value="${planState.freq}" style="width:64px;padding:8px 10px;border:1px solid var(--border);border-radius:var(--radius);font-size:13.5px;">
           <span style="font-size:13px;color:var(--ink-2);">次</span>
-          <button class="plan-btn ghost" id="toggleWeeklyBtn">${planState.showWeekly ? '收合' : '產生週期課表'}</button>
+          <button class="plan-btn ghost" id="toggleWeeklyBtn">${planState.showWeekly ? '收合' : '產生12週課表'}</button>
         </div>`;
       if(planState.showWeekly){
-        const sessions = buildPeriodizedSessions(ordered, masteredSet, factorFn);
+        const PLAN_WEEKS = 12;
+        const { sessions, completedSet: periodDone } = buildPeriodizedSessions(ordered, masteredSet, factorFn, PLAN_WEEKS * planState.freq);
         html += `<div style="max-height:460px;overflow-y:auto;">`;
         let lastWeek = 0;
         sessions.forEach((sess, idx)=>{
@@ -983,7 +986,14 @@ function renderPlanner(){
           if(support.length) html += `<div class="session-sub">輔助鞏固</div>` + support.map(rowHtml).join('');
           html += `</div></details>`;
         });
-        html += `</div><div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;line-height:1.6;">每次訓練都以60分鐘估算，並依當時已完成的先備進度自動安排內容；同一動作若當次時間有餘裕會多排幾輪鞏固，不會硬性只練一次就結束。共規劃 ${sessions.length} 次訓練，實際請依學生當天狀況、體力恢復彈性調整。</div>`;
+        html += `</div>`;
+        const notDone = ordered.filter(id => !periodDone.has(id));
+        if(notDone.length > 0){
+          html += `<div class="plan-warning" style="margin-top:10px;">這是 12 週（3 個月）的訓練窗口，在這段時間內排得完 ${ordered.length - notDone.length}／${ordered.length} 個動作，還有 ${notDone.length} 個動作來不及排入。建議這 12 週結束後，重新勾選學生當時已具備的先備動作，再產生下一輪 12 週課表，滾動式往下規劃。</div>`;
+        } else {
+          html += `<div style="font-size:11.5px;color:var(--ink-3);margin-top:10px;">在這 12 週的訓練窗口內可以完成全部 ${ordered.length} 個動作。</div>`;
+        }
+        html += `<div style="font-size:11.5px;color:var(--ink-3);margin-top:6px;line-height:1.6;">每次訓練都以60分鐘估算，並依當時已完成的先備進度自動安排內容；同一動作若當次時間有餘裕會多排幾輪鞏固，不會硬性只練一次就結束。共規劃 ${sessions.length} 次訓練。實際請依學生當天狀況、體力恢復彈性調整。</div>`;
       }
       html += `</div>`;
     }
@@ -1055,10 +1065,7 @@ function wirePlannerGoal(){
     });
   });
   document.querySelectorAll('[data-jumpnode]').forEach(row=>{
-    row.addEventListener('click', ()=>{
-      switchMode('map');
-      selectNode(row.dataset.jumpnode);
-    });
+    row.addEventListener('click', ()=> selectNode(row.dataset.jumpnode));
   });
   const freqInput = document.getElementById('freqInput');
   if(freqInput) freqInput.addEventListener('change', e=>{
